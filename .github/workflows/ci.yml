@@ -1,0 +1,66 @@
+name: CI
+on: [push, pull_request]
+
+env:
+  TASK_PYTHON: 3.9
+
+defaults:
+  runs-on: ubuntu-20.04
+
+jobs:
+
+  test:
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install nox
+      - run: nox --non-interactive --session test
+
+  lint:
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.TASK_PYTHON }}
+      - run: pip install nox
+      - run: nox --non-interactive --session lint
+
+  typecheck:
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.TASK_PYTHON }}
+      - run: pip install nox
+      - run: nox --non-interactive --session typecheck
+
+  dist:
+    needs: test
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.TASK_PYTHON }}
+      - run: pip install nox
+      - run: nox --non-interactive --session dist
+      - uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/
+
+  release:
+    needs: dist
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: dist
+      - uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
