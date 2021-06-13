@@ -3,13 +3,12 @@ on: [push, pull_request]
 
 env:
   TASK_PYTHON: 3.9
-
-defaults:
-  runs-on: ubuntu-20.04
+  TASK_OS: ubuntu-20.04
 
 jobs:
 
   test:
+    runs-on: ${{ env.TASK_OS }}
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
@@ -22,6 +21,7 @@ jobs:
       - run: nox --non-interactive --session test
 
   lint:
+    runs-on: ${{ env.TASK_OS }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -31,6 +31,7 @@ jobs:
       - run: nox --non-interactive --session lint
 
   typecheck:
+    runs-on: ${{ env.TASK_OS }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -41,6 +42,7 @@ jobs:
 
   dist:
     needs: test
+    runs-on: ${{ env.TASK_OS }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -56,6 +58,7 @@ jobs:
   release:
     needs: dist
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    runs-on: ${{ env.TASK_OS }}
     steps:
       - uses: actions/download-artifact@v2
         with:
