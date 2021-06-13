@@ -62,7 +62,9 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: dist
-      - uses: pypa/gh-action-pypi-publish@master
+          path: dist
+      - run: ls -l dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
