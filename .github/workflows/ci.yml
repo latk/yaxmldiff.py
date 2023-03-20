@@ -2,15 +2,15 @@ name: CI
 on: [push, pull_request]
 
 env:
-  TASK_PYTHON: 3.9
+  TASK_PYTHON: 3.10
 
 jobs:
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -20,7 +20,7 @@ jobs:
       - run: nox --non-interactive --session test
 
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -30,7 +30,7 @@ jobs:
       - run: nox --non-interactive --session lint
 
   typecheck:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -41,7 +41,7 @@ jobs:
 
   dist:
     needs: test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -57,7 +57,7 @@ jobs:
   release:
     needs: dist
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v2
         with:
