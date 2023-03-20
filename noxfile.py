@@ -18,7 +18,7 @@ def lint(session: nox.Session) -> None:
 @nox.session
 def reformat(session: nox.Session) -> None:
     """reformat the code"""
-    session.install("black")
+    session.install("black ~= 23.0")
     session.run("black", ".")
 
 

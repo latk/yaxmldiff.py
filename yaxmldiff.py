@@ -125,7 +125,6 @@ def compare_elem(writer: DiffWriter, left: Element, right: Element) -> None:
 
     # write the opening tag, possibly showing differing attributes
     if attrs_left_only or attrs_diff or attrs_right_only:
-
         if attrs_same:
             writer.write_same(f"<{left.tag} " + " ".join(attrs_same))
         else:
