@@ -50,7 +50,12 @@ def compare_xml(
 
 
 class DiffWriter:
-    def __init__(self, *, indent: int = 0, buffer: StringIO = None) -> None:
+    def __init__(
+        self,
+        *,
+        indent: int = 0,
+        buffer: Optional[StringIO] = None,
+    ) -> None:
         self._buffer = buffer or StringIO()
         self._indent = indent
         self.has_diff = False

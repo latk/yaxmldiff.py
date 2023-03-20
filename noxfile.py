@@ -25,7 +25,7 @@ def reformat(session: nox.Session) -> None:
 @nox.session
 def typecheck(session: nox.Session) -> None:
     """run mypy typechecker"""
-    session.install("mypy", "lxml-stubs")
+    session.install("mypy ~= 1.0", "lxml-stubs")
     session.run("mypy", *SOURCES)
 
 
