@@ -2,62 +2,62 @@ name: CI
 on: [push, pull_request]
 
 env:
-  TASK_PYTHON: '3.10'
+  TASK_PYTHON: '3.12'
 
 jobs:
 
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.8', '3.11', '3.12']
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install nox
-      - run: nox --non-interactive --session test
+      - run: uv sync --all-extras --dev
+      - run: uv run nox --non-interactive --session test
 
   lint:
-    runs-on: ubuntu-22.04
+    name: Lint and Typecheck
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.TASK_PYTHON }}
-      - run: pip install nox
-      - run: nox --non-interactive --session lint
-
-  typecheck:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.TASK_PYTHON }}
-      - run: pip install nox
-      - run: nox --non-interactive --session typecheck
+      - run: uv sync --all-extras --dev
+      - run: uv run nox --non-interactive --session lint
+      - run: uv run nox --non-interactive --session typecheck
 
   dist:
     needs: test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.TASK_PYTHON }}
-      - run: pip install nox
-      - run: nox --non-interactive --session dist
+      - run: uv build
       - uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist/
 
   release:
-    needs: dist
+    needs: [dist, typecheck, lint]
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v3
         with:

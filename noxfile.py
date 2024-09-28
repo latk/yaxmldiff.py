@@ -3,6 +3,7 @@ import glob
 import nox
 
 nox.options.sessions = ["lint", "typecheck", "test"]
+nox.options.default_venv_backend = "uv"
 
 SOURCES = ["src"]
 

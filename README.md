@@ -127,10 +127,14 @@ and will collapse uninteresting parts of the document.
 
 ## Contributing
 
+Use [uv](https://docs.astral.sh/uv) for virtualenv management.
+After installing uv, run `uv sync --all-extras --dev` to install dependencies.
+Then, can run tools as `uv run $TOOL`, for example `uv run mypy .`
+
 Automation is based on [Nox](https://nox.thea.codes/).
-See `nox --list` for various tasks.
-You can run `nox -s test` for particular targets,
-or just `nox` for a complete QA pipeline.
+See `uv run nox --list` for various tasks.
+You can run `uv run nox -s test` for particular targets,
+or just `uv run nox` for a complete QA pipeline.
 
 ## License
 
