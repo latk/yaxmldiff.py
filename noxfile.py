@@ -9,8 +9,8 @@ SOURCES = ["src"]
 @nox.session
 def lint(session: nox.Session) -> None:
     """check code style"""
-    session.install("flake8", "black", "pylint", ".")
-    session.run("black", "--diff", "--check", ".")
+    session.install("flake8", "ruff", "pylint", ".")
+    session.run("ruff", "format", "--diff")
     session.run("flake8", ".")
     session.run("pylint", *SOURCES)
 
@@ -18,8 +18,8 @@ def lint(session: nox.Session) -> None:
 @nox.session
 def reformat(session: nox.Session) -> None:
     """reformat the code"""
-    session.install("black ~= 23.0")
-    session.run("black", ".")
+    session.install("ruff ~= 0.6.8")
+    session.run("ruff", "format")
 
 
 @nox.session
