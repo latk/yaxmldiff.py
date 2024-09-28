@@ -3,7 +3,7 @@ import glob
 
 nox.options.sessions = ["lint", "typecheck", "test"]
 
-SOURCES = ["yaxmldiff.py"]
+SOURCES = ["src"]
 
 
 @nox.session
