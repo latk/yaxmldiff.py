@@ -1,5 +1,6 @@
-import nox
 import glob
+
+import nox
 
 nox.options.sessions = ["lint", "typecheck", "test"]
 
@@ -9,10 +10,9 @@ SOURCES = ["src"]
 @nox.session
 def lint(session: nox.Session) -> None:
     """check code style"""
-    session.install("flake8", "ruff", "pylint", ".")
+    session.install("ruff", ".")
     session.run("ruff", "format", "--diff")
-    session.run("flake8", ".")
-    session.run("pylint", *SOURCES)
+    session.run("ruff", "check")
 
 
 @nox.session

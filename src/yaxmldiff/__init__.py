@@ -11,12 +11,14 @@ Functions
 * compare_xml() - compare two XML documents
 """
 
-from io import StringIO
-from typing import Union, List, Tuple, Optional, Iterator
-from itertools import zip_longest
 from contextlib import contextmanager
+from io import StringIO
+from itertools import zip_longest
+from typing import Iterator, List, Optional, Tuple, Union
 
-from lxml.etree import _Element as Element, _Attrib as Attrib, XML as XmlParser
+from lxml.etree import XML as XmlParser  # noqa: N811 # not actually a constant
+from lxml.etree import _Attrib as Attrib
+from lxml.etree import _Element as Element
 
 __all__ = ["compare_xml"]
 
@@ -171,7 +173,7 @@ def compare_attributes(
     attrs_changed = []
     attrs_right_only = []
 
-    for key in sorted(set([*left_attrs, *right_attrs])):
+    for key in sorted({*left_attrs, *right_attrs}):
         left_value = left_attrs.get(key)
         right_value = right_attrs.get(key)
 
@@ -197,8 +199,11 @@ def compare_attributes(
     return attrs_shared, attrs_left_only, attrs_changed, attrs_right_only
 
 
+_MAX_ABBREV_VALUE = 4
+
+
 def abbreviate_attr(key: str, value: str) -> str:
-    if len(value) > 4:
+    if len(value) > _MAX_ABBREV_VALUE:
         value = "..."
     return f'{key}="{value}"'
 
