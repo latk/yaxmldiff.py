@@ -321,7 +321,7 @@ wheels = [
 [[package]]
 name = "yaxmldiff"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "lxml" },
 ]
@@ -335,12 +335,12 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "lxml" }]
+requires-dist = [{ name = "lxml", specifier = ">=3" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "lxml-stubs", specifier = ">=0.5.1" },
-    { name = "mypy", specifier = ">=1.11.2" },
-    { name = "nox", specifier = ">=2024.4.15" },
-    { name = "ruff", specifier = ">=0.6.8" },
+    { name = "lxml-stubs", specifier = "~=0.5.1" },
+    { name = "mypy", specifier = "~=1.11.2" },
+    { name = "nox", specifier = "~=2024.4.15" },
+    { name = "ruff", specifier = "~=0.6.8" },
 ]

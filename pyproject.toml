@@ -1,7 +1,8 @@
 [project]
-dynamic = ["version", "readme"]
 name = "yaxmldiff"
+version = "0.1.0"
 description = "yaxmldiff is Yet Another XML Differ"
+dynamic = ["readme"]
 requires-python = ">= 3.8"
 authors = [
   {name = "Lukas Atkinson", email = "opensource@LukasAtkinson.de"}
@@ -22,29 +23,32 @@ classifiers = [
   "Topic :: Text Processing :: Markup :: XML",
 ]
 dependencies = [
-  "lxml",
+  "lxml>=3",  # not entirely sure what an appropriate constraint would be
 ]
 
 [project.urls]
-"Homepage"      = "https://github.com/latk/yaxmldiff.py"
-"Github"        = "https://github.com/latk/yaxmldiff.py"
+"GitHub"        = "https://github.com/latk/yaxmldiff.py"
 "Issue Tracker" = "https://github.com/latk/yaxmldiff.py/issues"
-
-[tool.setuptools.dynamic]
-version = {attr = "yaxmldiff.__version__"}
-readme = {file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown"}
 
 [tool.uv]
 dev-dependencies = [
-    "lxml-stubs>=0.5.1",
-    "mypy>=1.11.2",
-    "nox>=2024.4.15",
-    "ruff>=0.6.8",
+    "lxml-stubs~=0.5.1",
+    "mypy~=1.11.2",
+    "nox~=2024.4.15",
+    "ruff~=0.6.8",
 ]
 
-[build-backend]
-required = ['setuptools >= 61.0']
-build-backend = "setuptools.build_meta"
+[build-system]
+requires = ["hatchling>=1.11", "hatch-fancy-pypi-readme>=24.1.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "README.md" },
+  { text = "\n\n" },
+  { path = "CHANGELOG.md" },
+]
 
 [tool.mypy]
 disallow_untyped_defs = true

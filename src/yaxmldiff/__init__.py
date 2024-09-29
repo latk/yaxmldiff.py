@@ -22,8 +22,6 @@ from lxml.etree import _Element as Element
 
 __all__ = ["compare_xml"]
 
-__version__ = "0.1.0"
-
 
 def compare_xml(
     left: Union[str, Element],
