@@ -1,6 +1,6 @@
 [project]
 name = "yaxmldiff"
-version = "0.1.0"
+version = "0.2.0"
 description = "yaxmldiff is Yet Another XML Differ"
 dynamic = ["readme"]
 requires-python = ">= 3.8"

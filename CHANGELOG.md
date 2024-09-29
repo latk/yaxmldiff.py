@@ -1,6 +1,6 @@
 # Changelog
 
-## next release
+## 0.2.0 – 2024-09-29
 
 * minimum Python version is 3.8
 * (internal) packaging modernization

@@ -169,7 +169,7 @@ Run `just -l` to get a list of all recipes.
 
 ## License
 
-Copyright 2021 Lukas Atkinson
+Copyright 2021-2024 Lukas Atkinson
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

@@ -1,5 +1,5 @@
 # yaxmldiff is Yet Another XML Differ <https://github.com/latk/yaxmldiff.py>
-# Copyright 2021 Lukas Atkinson
+# Copyright 2021-2024 Lukas Atkinson
 # SPDX-License-Identifier: Apache-2.0
 
 """yaxmldiff is Yet Another XML Differ <https://github.com/latk/yaxmldiff.py>.
