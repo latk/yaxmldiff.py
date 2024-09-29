@@ -70,13 +70,14 @@ select = [
   "PL",  # pylint
   "TRY",  # exception handling
   "RUF",
-  # "D", # docstyle  TODO enable
-  # "UP",  # upgrade  TODO enable
-  "ANN",  # type annotations  TODO enable
-  "S",  # bandit TODO enable
+  "D", # docstyle
+  "UP",  # upgrade
+  "ANN",  # type annotations
+  "S",  # bandit
 ]
 ignore = [
   "E501",  # line length is decided by the formatter
   "S101",  # allow asserts
   "ANN101", "ANN102",  # don't require annotation on self
+  "D203", "D213",  # docstring positioning rules
 ]

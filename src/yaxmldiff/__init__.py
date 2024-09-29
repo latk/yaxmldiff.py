@@ -2,8 +2,7 @@
 # Copyright 2021 Lukas Atkinson
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-yaxmldiff is Yet Another XML Differ <https://github.com/latk/yaxmldiff.py>
+"""yaxmldiff is Yet Another XML Differ <https://github.com/latk/yaxmldiff.py>.
 
 Functions
 ---------
@@ -27,14 +26,12 @@ def compare_xml(
     left: Union[str, Element],
     right: Union[str, Element],
 ) -> Optional[str]:
-    r"""
-    Compare two XML documents.
+    r"""Compare two XML documents.
 
     If the documents are given as strings, they are parsed first.
 
     Returns: None if both are equal, a diff otherwise.
     """
-
     if isinstance(left, str):
         left = XmlParser(left.encode())
 
