@@ -24,6 +24,7 @@ None
 Compare two XML documents.
 
 If the documents are given as strings, they are parsed first.
+Alternatively, the documents can be given as an `lxml.etree` object.
 
 Returns: None if both are equal, a diff otherwise.
 
@@ -31,9 +32,9 @@ Signature:
 
 ``` python
 def compare_xml(
-    left: Union[str, Element],
-    right: Union[str, Element],
-) -> Optional[str]:
+    left: str | Element,
+    right: str | Element,
+) -> str | None:
 ```
 
 ## Examples
