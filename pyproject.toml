@@ -32,10 +32,10 @@ dependencies = [
 
 [tool.uv]
 dev-dependencies = [
-    "lxml-stubs~=0.5.1",
     "mypy~=1.11.2",
     "nox~=2024.4.15",
     "ruff~=0.6.8",
+    "types-lxml>=2024.9.16",
 ]
 
 [build-system]
