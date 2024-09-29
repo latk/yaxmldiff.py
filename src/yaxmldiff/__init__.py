@@ -38,15 +38,15 @@ def compare_xml(
     if isinstance(right, str):
         right = XmlParser(right.encode())
 
-    writer = DiffWriter()
-    compare_elem_with_trailer(writer, left, right)
+    writer = _DiffWriter()
+    _compare_elem_with_trailer(writer, left, right)
 
     if writer.has_diff:
         return str(writer)
     return None
 
 
-class DiffWriter:
+class _DiffWriter:
     def __init__(
         self,
         *,
@@ -77,8 +77,8 @@ class DiffWriter:
             self._write_line("+ ", right)
 
     @contextmanager
-    def indented(self) -> Iterator["DiffWriter"]:
-        inner = DiffWriter(
+    def indented(self) -> Iterator["_DiffWriter"]:
+        inner = _DiffWriter(
             indent=self._indent + 1,
             buffer=self._buffer,  # directly share buffer
         )
@@ -88,8 +88,8 @@ class DiffWriter:
         self.has_diff = self.has_diff or inner.has_diff
 
     @contextmanager
-    def only_show_if_diff(self, *, indented: bool = False) -> Iterator["DiffWriter"]:
-        inner = DiffWriter(indent=self._indent + indented)
+    def only_show_if_diff(self, *, indented: bool = False) -> Iterator["_DiffWriter"]:
+        inner = _DiffWriter(indent=self._indent + indented)
 
         yield inner
 
@@ -102,16 +102,16 @@ class DiffWriter:
             self.write_same("...")
 
 
-def compare_elem_with_trailer(
-    writer: DiffWriter, left: Element, right: Element
+def _compare_elem_with_trailer(
+    writer: _DiffWriter, left: Element, right: Element
 ) -> None:
-    compare_elem(writer, left, right)
+    _compare_elem(writer, left, right)
     assert not isinstance(left.tail, bytes)
     assert not isinstance(right.tail, bytes)
-    compare_text(writer, left.tail, right.tail)
+    _compare_text(writer, left.tail, right.tail)
 
 
-def compare_elem(writer: DiffWriter, left: Element, right: Element) -> None:
+def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
     if left.tag != right.tag:
         writer.write_diff(_tag_only(left), _tag_only(right))
         return
@@ -123,7 +123,7 @@ def compare_elem(writer: DiffWriter, left: Element, right: Element) -> None:
         attrs_left_only,
         attrs_diff,
         attrs_right_only,
-    ) = compare_attributes(left.attrib, right.attrib)
+    ) = _compare_attributes(left.attrib, right.attrib)
 
     # write the opening tag, possibly showing differing attributes
     if attrs_left_only or attrs_diff or attrs_right_only:
@@ -154,12 +154,12 @@ def compare_elem(writer: DiffWriter, left: Element, right: Element) -> None:
         return
 
     with writer.only_show_if_diff(indented=True) as inner:
-        compare_content(inner, left, right)
+        _compare_content(inner, left, right)
 
     writer.write_same(f"</{left.tag}>")
 
 
-def compare_attributes(
+def _compare_attributes(
     left_attrs: Attrib,
     right_attrs: Attrib,
 ) -> Tuple[List[str], List[str], List[Tuple[str, str]], List[str]]:
@@ -177,12 +177,12 @@ def compare_attributes(
 
         if left_value is None:
             assert right_value is not None
-            attrs_right_only.append(abbreviate_attr(key, right_value))
+            attrs_right_only.append(_abbreviate_attr(key, right_value))
         elif right_value is None:
             assert left_value is not None
-            attrs_left_only.append(abbreviate_attr(key, left_value))
+            attrs_left_only.append(_abbreviate_attr(key, left_value))
         elif left_value == right_value:
-            attrs_shared.append(abbreviate_attr(key, left_value))
+            attrs_shared.append(_abbreviate_attr(key, left_value))
         else:
             attrs_changed.append(
                 (
@@ -197,16 +197,16 @@ def compare_attributes(
 _MAX_ABBREV_VALUE = 4
 
 
-def abbreviate_attr(key: str, value: str) -> str:
+def _abbreviate_attr(key: str, value: str) -> str:
     if len(value) > _MAX_ABBREV_VALUE:
         value = "..."
     return f'{key}="{value}"'
 
 
-def compare_content(writer: DiffWriter, left: Element, right: Element) -> None:
+def _compare_content(writer: _DiffWriter, left: Element, right: Element) -> None:
     assert left.text is None or isinstance(left.text, str)
     assert right.text is None or isinstance(right.text, str)
-    compare_text(writer, left.text, right.text)
+    _compare_text(writer, left.text, right.text)
 
     for left_child, right_child in zip_longest(list(left), list(right)):
         if left_child is None:
@@ -214,11 +214,11 @@ def compare_content(writer: DiffWriter, left: Element, right: Element) -> None:
         elif right_child is None:
             writer.write_diff(_tag_only(left_child), None)
         else:
-            compare_elem_with_trailer(writer, left_child, right_child)
+            _compare_elem_with_trailer(writer, left_child, right_child)
 
 
-def compare_text(
-    writer: DiffWriter,
+def _compare_text(
+    writer: _DiffWriter,
     left: Optional[str],
     right: Optional[str],
 ) -> None:
