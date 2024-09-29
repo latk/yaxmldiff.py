@@ -35,6 +35,11 @@ jobs:
     needs: test
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
+    environment:  # allows release permissions to be gated behind additional rules
+      name: pypi
+      url: https://pypi.org/project/yaxmldiff
+    permissions:
+      id-token: write  # needed for trusted publishing
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -42,6 +47,3 @@ jobs:
           path: dist
       - run: ls -l dist
       - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
