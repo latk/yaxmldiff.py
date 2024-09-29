@@ -129,12 +129,12 @@ and will collapse uninteresting parts of the document.
 
 Use [uv](https://docs.astral.sh/uv) for virtualenv management.
 After installing uv, run `uv sync --all-extras --dev` to install dependencies.
-Then, can run tools as `uv run $TOOL`, for example `uv run mypy .`
 
-Automation is based on [Nox](https://nox.thea.codes/).
-See `uv run nox --list` for various tasks.
-You can run `uv run nox -s test` for particular targets,
-or just `uv run nox` for a complete QA pipeline.
+Common development tasks are managed via the [`just` tasks runner](https://github.com/casey/just).
+Install it via your package manager.
+If in doubt, use `pipx install rust-just`.
+Once installed, run `just` or `just qa` for a complete QA pipeline with linters+typechecking+tests.
+Run `just -l` to get a list of all recipes.
 
 ## License
 

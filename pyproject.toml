@@ -33,7 +33,7 @@ dependencies = [
 [tool.uv]
 dev-dependencies = [
     "mypy~=1.11.2",
-    "nox~=2024.4.15",
+    "pytest>=8.3.3",
     "ruff~=0.6.8",
     "types-lxml>=2024.9.16",
 ]
@@ -53,6 +53,9 @@ fragments = [
 [tool.mypy]
 disallow_untyped_defs = true
 pretty = true
+
+[tool.pytest.ini_options]
+addopts = "--doctest-glob=*.md"
 
 [tool.ruff.lint]
 select = [

@@ -16,26 +16,15 @@ jobs:
       - uses: astral-sh/setup-uv@v2
         with:
           enable-cache: true
+      - uses: taiki-e/install-action@just
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: uv sync --all-extras --dev
-      - run: uv run nox --non-interactive --session test
-
-  lint:
-    name: Lint and Typecheck
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v2
-        with:
-          enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.TASK_PYTHON }}
-      - run: uv sync --all-extras --dev
-      - run: uv run nox --non-interactive --session lint
-      - run: uv run nox --non-interactive --session typecheck
+      - run: uv sync --locked --all-extras --dev
+      - run: just -v lint
+      - run: just -v types
+      - run: just -v test
+      - run: just -v dist
 
   dist:
     needs: test
@@ -45,17 +34,18 @@ jobs:
       - uses: astral-sh/setup-uv@v2
         with:
           enable-cache: true
+      - uses: taiki-e/install-action@just
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.TASK_PYTHON }}
-      - run: uv build
+      - run: just -v dist
       - uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist/
 
   release:
-    needs: [dist, typecheck, lint]
+    needs: dist
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     steps:
