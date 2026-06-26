@@ -112,7 +112,7 @@ Example: changed attributes
 
 ```
 
-Example: can hande encoding declarations
+Example: can handle encoding declarations
 
 ```pycon
 >>> print(compare_xml(
@@ -128,6 +128,21 @@ Example: comparison ignores surrounding space and newlines
 ```pycon
 >>> print(compare_xml("<a>b<c/></a>", "\n <a> \n b \n <c \n/> \n </a> \n "))
 None
+
+```
+
+Example: handle comments
+
+```pycon
+>>> print(compare_xml("<a><!-- hello -->value<b/></a>", "<a>value<b/><!-- hola --></a>"))
+  <a>
++   value
+-   <!-- hello -->
++   <b/>
+-   value
+-   <b/>
++   <!-- hola -->
+  </a>
 
 ```
 

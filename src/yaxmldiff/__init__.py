@@ -16,6 +16,7 @@ from itertools import zip_longest
 from typing import Iterator, List, Optional, Tuple, Union
 
 from lxml.etree import XML as XmlParser  # noqa: N811 # not actually a constant
+from lxml.etree import Comment
 from lxml.etree import _Attrib as Attrib
 from lxml.etree import _Element as Element
 
@@ -235,6 +236,9 @@ def _compare_text(
 
 
 def _tag_only(elem: Element) -> str:
+    if elem.tag == Comment:
+        return f"<!--{elem.text}-->"
+
     abbreviated = "<" + elem.tag
     if elem.attrib:
         abbreviated += " ..."
