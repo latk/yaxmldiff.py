@@ -2,6 +2,7 @@
 
 # Run all commands within an UV context, so that deps are auto-installed.
 set shell := ['uv', 'run', 'bash', '-euo', 'pipefail', '-c']
+set positional-arguments
 sources := "src"
 
 # default checks
@@ -21,9 +22,19 @@ types:
     mypy {{sources}}
 
 # run the test suite
-[positional-arguments]
 test *args:
     pytest -v "$@"
+
+# Run tests under multiple configurations (Python and lxml versions)
+multitest *args:
+  #!/usr/bin/env bash
+  set -xeuo pipefail
+  uv run --isolated --python=3.10 pytest -v "$@"
+  uv run --isolated --python=3.11 pytest -v "$@"
+  uv run --isolated --python=3.12 pytest -v "$@"
+  uv run --isolated --python=3.13 pytest -v "$@"
+  uv run --isolated --python=3.14 pytest -v "$@"
+  uv run --isolated --resolution=lowest pytest -v "$@"
 
 # build wheels into `dist/` folder
 dist:

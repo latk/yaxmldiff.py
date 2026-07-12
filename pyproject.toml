@@ -3,7 +3,7 @@ name = "yaxmldiff"
 version = "0.2.0"
 description = "yaxmldiff is Yet Another XML Differ"
 dynamic = ["readme"]
-requires-python = ">= 3.8"
+requires-python = ">= 3.10"
 authors = [
   {name = "Lukas Atkinson", email = "opensource@LukasAtkinson.de"}
 ]
@@ -14,28 +14,28 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Testing",
   "Topic :: Text Processing :: Markup :: XML",
 ]
 dependencies = [
-  "lxml>=3",  # not entirely sure what an appropriate constraint would be
+  "lxml>=5",  # not entirely sure what an appropriate constraint would be
 ]
 
 [project.urls]
 "GitHub"        = "https://github.com/latk/yaxmldiff.py"
 "Issue Tracker" = "https://github.com/latk/yaxmldiff.py/issues"
 
-[tool.uv]
-dev-dependencies = [
-    "mypy~=1.11.2",
-    "pytest>=8.3.3",
-    "ruff~=0.6.8",
-    "types-lxml>=2024.9.16",
+[dependency-groups]
+dev = [
+    "mypy>=2.2.0",
+    "pytest>=9.1.1",
+    "ruff>=0.15.21",
+    "types-lxml>=2026.2.16",
 ]
 
 [build-system]
@@ -51,8 +51,22 @@ fragments = [
 ]
 
 [tool.mypy]
+disallow_any_decorated = true
+disallow_any_expr = true
+disallow_any_generics = true
+disallow_any_unimported = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
 disallow_untyped_defs = true
+implicit_reexport = false
 pretty = true
+strict_equality = true
+strict_equality_for_none = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 addopts = "--doctest-glob=*.md"
@@ -81,6 +95,11 @@ select = [
 ignore = [
   "E501",  # line length is decided by the formatter
   "S101",  # allow asserts
-  "ANN101", "ANN102",  # don't require annotation on self
   "D203", "D213",  # docstring positioning rules
+  "D401",  # allow descriptive (non-imperative) docstrings
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = [
+  "D100",  # undocumented-public-module
 ]

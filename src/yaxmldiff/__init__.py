@@ -10,12 +10,13 @@ Functions
 * compare_xml() - compare two XML documents
 """
 
-from contextlib import contextmanager
-from io import StringIO
-from itertools import zip_longest
-from typing import Iterator, List, Optional, Tuple, Union
+import contextlib
+import dataclasses
+import io
+import itertools
+import typing as t
 
-from lxml.etree import XML as XmlParser  # noqa: N811 # not actually a constant
+import lxml.etree
 from lxml.etree import _Attrib as Attrib
 from lxml.etree import _Element as Element
 
@@ -23,9 +24,9 @@ __all__ = ["compare_xml"]
 
 
 def compare_xml(
-    left: Union[str, Element],
-    right: Union[str, Element],
-) -> Optional[str]:
+    left: str | Element,
+    right: str | Element,
+) -> str | None:
     r"""Compare two XML documents.
 
     If the documents are given as strings, they are parsed first.
@@ -33,10 +34,10 @@ def compare_xml(
     Returns: None if both are equal, a diff otherwise.
     """
     if isinstance(left, str):
-        left = XmlParser(left.encode())
+        left = lxml.etree.XML(left.encode())
 
     if isinstance(right, str):
-        right = XmlParser(right.encode())
+        right = lxml.etree.XML(right.encode())
 
     writer = _DiffWriter()
     _compare_elem_with_trailer(writer, left, right)
@@ -51,9 +52,9 @@ class _DiffWriter:
         self,
         *,
         indent: int = 0,
-        buffer: Optional[StringIO] = None,
+        buffer: io.StringIO | None = None,
     ) -> None:
-        self._buffer = buffer or StringIO()
+        self._buffer = buffer or io.StringIO()
         self._indent = indent
         self.has_diff = False
 
@@ -69,15 +70,15 @@ class _DiffWriter:
     def write_same(self, line: str) -> None:
         self._write_line("  ", line)
 
-    def write_diff(self, left: Optional[str], right: Optional[str]) -> None:
+    def write_diff(self, left: str | None, right: str | None) -> None:
         self.has_diff = True
         if left is not None:
             self._write_line("- ", left)
         if right is not None:
             self._write_line("+ ", right)
 
-    @contextmanager
-    def indented(self) -> Iterator["_DiffWriter"]:
+    @contextlib.contextmanager
+    def indented(self) -> t.Generator["_DiffWriter", None, None]:
         inner = _DiffWriter(
             indent=self._indent + 1,
             buffer=self._buffer,  # directly share buffer
@@ -87,8 +88,10 @@ class _DiffWriter:
 
         self.has_diff = self.has_diff or inner.has_diff
 
-    @contextmanager
-    def only_show_if_diff(self, *, indented: bool = False) -> Iterator["_DiffWriter"]:
+    @contextlib.contextmanager
+    def only_show_if_diff(
+        self, *, indented: bool = False
+    ) -> t.Generator["_DiffWriter", None, None]:
         inner = _DiffWriter(indent=self._indent + indented)
 
         yield inner
@@ -116,28 +119,23 @@ def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
         writer.write_diff(_tag_only(left), _tag_only(right))
         return
 
+    tagname = _tagname(left)
     has_content = len(left) or len(right) or left.text or right.text
 
-    (
-        attrs_same,
-        attrs_left_only,
-        attrs_diff,
-        attrs_right_only,
-    ) = _compare_attributes(left.attrib, right.attrib)
-
     # write the opening tag, possibly showing differing attributes
-    if attrs_left_only or attrs_diff or attrs_right_only:
-        if attrs_same:
-            writer.write_same(f"<{left.tag} " + " ".join(attrs_same))
+    attrs = _compare_attributes(left.attrib, right.attrib)
+    if attrs.left_only or attrs.changed or attrs.right_only:
+        if attrs.same:
+            writer.write_same(f"<{tagname} " + " ".join(attrs.same))
         else:
-            writer.write_same(f"<{left.tag}")
+            writer.write_same(f"<{tagname}")
 
         with writer.indented() as inner:
-            for left_attr in attrs_left_only:
+            for left_attr in attrs.left_only:
                 inner.write_diff(left_attr, None)
-            for left_attr, right_attr in attrs_diff:
+            for left_attr, right_attr in attrs.changed:
                 inner.write_diff(left_attr, right_attr)
-            for right_attr in attrs_right_only:
+            for right_attr in attrs.right_only:
                 inner.write_diff(None, right_attr)
 
         if has_content:
@@ -147,51 +145,48 @@ def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
             return
 
     elif has_content:
-        writer.write_same(f"<{left.tag} ...>" if attrs_same else f"<{left.tag}>")
+        writer.write_same(f"<{tagname} ...>" if attrs.same else f"<{tagname}>")
 
     else:
-        writer.write_same(f"<{left.tag} .../>" if attrs_same else f"<{left.tag}/>")
+        writer.write_same(f"<{tagname} .../>" if attrs.same else f"<{tagname}/>")
         return
 
     with writer.only_show_if_diff(indented=True) as inner:
         _compare_content(inner, left, right)
 
-    writer.write_same(f"</{left.tag}>")
+    writer.write_same(f"</{tagname}>")
 
 
-def _compare_attributes(
-    left_attrs: Attrib,
-    right_attrs: Attrib,
-) -> Tuple[List[str], List[str], List[Tuple[str, str]], List[str]]:
-    attrs_shared = []
-    attrs_left_only = []
-    attrs_changed = []
-    attrs_right_only = []
+@dataclasses.dataclass
+class _AttrDiff:
+    same: list[str]
+    left_only: list[str]
+    changed: list[tuple[str, str]]
+    right_only: list[str]
 
-    for key in sorted({*left_attrs, *right_attrs}):
-        left_value = left_attrs.get(key)
-        right_value = right_attrs.get(key)
 
-        assert left_value is None or isinstance(left_value, str)
-        assert right_value is None or isinstance(right_value, str)
+def _compare_attributes(left_attrs: Attrib, right_attrs: Attrib) -> _AttrDiff:
+    attrs = _AttrDiff([], [], [], [])
 
-        if left_value is None:
-            assert right_value is not None
-            attrs_right_only.append(_abbreviate_attr(key, right_value))
-        elif right_value is None:
-            assert left_value is not None
-            attrs_left_only.append(_abbreviate_attr(key, left_value))
-        elif left_value == right_value:
-            attrs_shared.append(_abbreviate_attr(key, left_value))
-        else:
-            attrs_changed.append(
-                (
-                    f'{key}="{left_value}"',
-                    f'{key}="{right_value}"',
+    for key in sorted({*left_attrs.keys(), *right_attrs.keys()}):
+        match left_attrs.get(key), right_attrs.get(key):
+            case str() as left, None:
+                attrs.left_only.append(_abbreviate_attr(key, left))
+            case None, str() as right:
+                attrs.right_only.append(_abbreviate_attr(key, right))
+            case str() as left, str() as right if left == right:
+                attrs.same.append(_abbreviate_attr(key, left))
+            case str() as left, str() as right:
+                attrs.changed.append(
+                    (
+                        f'{key}="{left}"',
+                        f'{key}="{right}"',
+                    )
                 )
-            )
+            case left, right:
+                raise AssertionError(f"unreachable: {left=} {right=}")  # noqa: TRY003
 
-    return attrs_shared, attrs_left_only, attrs_changed, attrs_right_only
+    return attrs
 
 
 _MAX_ABBREV_VALUE = 4
@@ -208,7 +203,7 @@ def _compare_content(writer: _DiffWriter, left: Element, right: Element) -> None
     assert right.text is None or isinstance(right.text, str)
     _compare_text(writer, left.text, right.text)
 
-    for left_child, right_child in zip_longest(list(left), list(right)):
+    for left_child, right_child in itertools.zip_longest(list(left), list(right)):
         if left_child is None:
             writer.write_diff(None, _tag_only(right_child))
         elif right_child is None:
@@ -217,11 +212,7 @@ def _compare_content(writer: _DiffWriter, left: Element, right: Element) -> None
             _compare_elem_with_trailer(writer, left_child, right_child)
 
 
-def _compare_text(
-    writer: _DiffWriter,
-    left: Optional[str],
-    right: Optional[str],
-) -> None:
+def _compare_text(writer: _DiffWriter, left: str | None, right: str | None) -> None:
     left = "" if left is None else left.strip()
     right = "" if right is None else right.strip()
 
@@ -235,11 +226,28 @@ def _compare_text(
 
 
 def _tag_only(elem: Element) -> str:
-    abbreviated = "<" + elem.tag
+    tagname = _tagname(elem)
+    abbreviated = f"<{tagname}"
     if elem.attrib:
         abbreviated += " ..."
     if len(elem) or elem.text:
-        abbreviated += ">...</" + elem.tag + ">"
+        abbreviated += f">...</{tagname}>"
     else:
         abbreviated += "/>"
     return abbreviated
+
+
+def _tagname(tag: str | bytes | bytearray | lxml.etree.QName | Element) -> str:
+    """A tagname, for display purposes only."""
+    if isinstance(tag, Element):
+        tag = tag.tag
+    match tag:
+        case str():
+            return tag
+        case lxml.etree.QName():
+            # Returning `.text` would be unambiguous but too verbose.
+            # In nearly all cases, the `.localname` will be sufficient.
+            return tag.localname
+        case bytes() | bytearray():
+            # Backslashes aren't valid syntax, but should make the rare non-UTF-8 name stand out.
+            return tag.decode(encoding="utf-8", errors="backslashreplace")

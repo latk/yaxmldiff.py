@@ -1,5 +1,11 @@
 # Changelog
 
+## unreleased
+
+* minimum Python version is 3.10
+* minimum lxml version is 5
+* (internal) packaging updates
+
 ## 0.2.0 – 2024-09-29
 
 * minimum Python version is 3.8
