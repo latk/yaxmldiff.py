@@ -23,10 +23,17 @@ __all__ = ["compare_xml"]
 def compare_xml(
     left: str | Element,
     right: str | Element,
+    *,
+    context: int = 3,
 ) -> str | None:
     r"""Compare two XML documents.
 
     If the documents are given as strings, they are parsed first.
+
+    Args:
+      left: an input document
+      right: an input document
+      context: how many lines of context to preserve around each change
 
     Returns: None if both are equal, a diff otherwise.
     """
@@ -40,6 +47,7 @@ def compare_xml(
         _diff.diff_seq(
             list(_minidom.parse_top(left)),
             list(_minidom.parse_top(right)),
+            config=_diff.Config(context=context),
         )
     )
 

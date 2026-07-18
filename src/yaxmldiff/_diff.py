@@ -12,6 +12,15 @@ import lxml.etree
 
 from . import _minidom as dom
 
+
+@dataclasses.dataclass
+class Config:
+    context: int = 3
+    """How many lines of shared context should be shown."""
+    maxwidth: int = 40
+    """Up to which line width untruncated content may be shown."""
+
+
 DiffItem: t.TypeAlias = "Same | Left | Right | Nested"
 
 
@@ -46,10 +55,7 @@ class Nested:
 
 
 def diff_seq(
-    left_items: t.Sequence[dom.DOM],
-    right_items: t.Sequence[dom.DOM],
-    *,
-    context: int = 3,
+    left_items: t.Sequence[dom.DOM], right_items: t.Sequence[dom.DOM], *, config: Config
 ) -> t.Iterable[DiffItem]:
     matcher = difflib.SequenceMatcher(isjunk=None, a=left_items, b=right_items)
     opcodes = matcher.get_opcodes()
@@ -65,17 +71,18 @@ def diff_seq(
                 else:
                     position = "middle"
                 yield from _truncated_context(
-                    left_items[left_start:left_end], position=position, context=context
+                    left_items[left_start:left_end], position=position, config=config
                 )
             case "delete" | "insert":
                 for left in left_items[left_start:left_end]:
-                    yield (Left(_concise(left)))
+                    yield (Left(_concise(left, maxlen=config.maxwidth)))
                 for right in right_items[right_start:right_end]:
-                    yield (Right(_concise(right)))
+                    yield (Right(_concise(right, maxlen=config.maxwidth)))
             case "replace":
                 yield from _diff_seq_with_lookahead(
                     left_items[left_start:left_end],
                     right_items[right_start:right_end],
+                    config=config,
                 )
             case _:  # pragma: no cover
                 raise AssertionError(f"unreachable: {opcode=}")
@@ -85,26 +92,28 @@ def _truncated_context(
     items: t.Sequence[dom.DOM],
     *,
     position: t.Literal["start", "middle", "end"],
-    context: int,
+    config: Config,
 ) -> t.Iterable[Same]:
+    context = config.context
     if position == "start" and (skipped := len(items) - context) > 1:
         yield Same(f"... skipped {skipped} lines")
-        yield from (Same(_concise(x)) for x in items[-context:])
+        yield from (Same(_concise(x, maxlen=config.maxwidth)) for x in items[-context:])
     elif position == "middle" and (skipped := len(items) - 2 * context) > 1:
-        yield from (Same(_concise(x)) for x in items[:context])
+        yield from (Same(_concise(x, maxlen=config.maxwidth)) for x in items[:context])
         yield Same(f"... skipped {skipped} lines")
-        yield from (Same(_concise(x)) for x in items[-context:])
+        yield from (Same(_concise(x, maxlen=config.maxwidth)) for x in items[-context:])
     elif position == "end" and (skipped := len(items) - context) > 1:
-        yield from (Same(_concise(x)) for x in items[:context])
+        yield from (Same(_concise(x, maxlen=config.maxwidth)) for x in items[:context])
         yield Same(f"... skipped {skipped} lines")
     else:
-        yield from (Same(_concise(x)) for x in items)
+        yield from (Same(_concise(x, maxlen=config.maxwidth)) for x in items)
 
 
 def _diff_seq_with_lookahead(
     left_items: t.Sequence[dom.DOM],
     right_items: t.Sequence[dom.DOM],
     *,
+    config: Config,
     lookahead: int = 30,  # fixed window to ensure linear performance
 ) -> t.Iterable[DiffItem]:
     """A basic diff algorithm that's good at detecting single inserted lines."""
@@ -114,7 +123,7 @@ def _diff_seq_with_lookahead(
         right = right_items[right_i]
 
         if left == right:
-            yield Same(_concise(left))
+            yield Same(_concise(left, maxlen=config.maxwidth))
             left_i += 1
             right_i += 1
             continue
@@ -132,7 +141,7 @@ def _diff_seq_with_lookahead(
         # If neither item was found on the other side within the lookahead window,
         # treat this as a true difference, and compare more closely.
         if left_next >= lookahead and right_next >= lookahead:
-            yield from diff(left, right)
+            yield from diff(left, right, config=config)
             left_i += 1
             right_i += 1
             continue
@@ -140,50 +149,52 @@ def _diff_seq_with_lookahead(
         # If the right item appears earlier in the context,
         # treat the left item as inserted, and vice versa.
         if right_next <= left_next:
-            yield Left(_concise(left))
+            yield Left(_concise(left, maxlen=config.maxwidth))
             left_i += 1
         else:
-            yield Right(_concise(right))
+            yield Right(_concise(right, maxlen=config.maxwidth))
             right_i += 1
 
     # yield remaining items
     for left in left_items[left_i:]:
-        yield Left(_concise(left))
+        yield Left(_concise(left, maxlen=config.maxwidth))
     for right in right_items[right_i:]:
-        yield Right(_concise(right))
+        yield Right(_concise(right, maxlen=config.maxwidth))
 
 
-def diff(left: dom.DOM, right: dom.DOM) -> t.Iterable[DiffItem]:
+def diff(left: dom.DOM, right: dom.DOM, *, config: Config) -> t.Iterable[DiffItem]:
     match (left, right):
         case _ if left == right:
-            yield Same(_concise(left))
+            yield Same(_concise(left, maxlen=config.maxwidth))
         case _ if type(left) is not type(right):
-            yield Left(_concise(left))
-            yield Right(_concise(right))
+            yield Left(_concise(left, maxlen=config.maxwidth))
+            yield Right(_concise(right, maxlen=config.maxwidth))
         case str(), str():
-            yield Left(_concise(left))
-            yield Right(_concise(right))
+            yield Left(_concise(left, maxlen=config.maxwidth))
+            yield Right(_concise(right, maxlen=config.maxwidth))
         case dom.Elem(), dom.Elem() if left.tag != right.tag:
-            yield Left(_concise(left))
-            yield Right(_concise(right))
+            yield Left(_concise(left, maxlen=config.maxwidth))
+            yield Right(_concise(right, maxlen=config.maxwidth))
         case dom.Comment(), dom.Comment():
             yield Same("<!--")
-            yield Nested(tuple(diff(left.content, right.content)))
+            yield Nested(tuple(diff(left.content, right.content, config=config)))
             yield Same("-->")
         case dom.PI(), dom.PI() if left.target != right.target:
-            yield Left(_concise(left))
-            yield Right(_concise(right))
+            yield Left(_concise(left, maxlen=config.maxwidth))
+            yield Right(_concise(right, maxlen=config.maxwidth))
         case dom.PI(), dom.PI():
             yield Same(f"<?{left.target}")
-            yield Nested(tuple(diff(left.content, right.content)))
+            yield Nested(tuple(diff(left.content, right.content, config=config)))
             yield Same("?>")
         case dom.Elem(), dom.Elem():
-            yield from _diff_elem(left, right)
+            yield from _diff_elem(left, right, config=config)
         case _:  # pragma: no cover
             raise TypeError(f"unreachable: {left=} {right=}")
 
 
-def _diff_elem(left: dom.Elem, right: dom.Elem) -> t.Iterable[DiffItem]:
+def _diff_elem(
+    left: dom.Elem, right: dom.Elem, *, config: Config
+) -> t.Iterable[DiffItem]:
     has_content = len(left.content) or len(right.content)
     closer = ">" if has_content else "/>"
     attrs = _compare_attributes(dict(left.attrs), dict(right.attrs))
@@ -207,7 +218,7 @@ def _diff_elem(left: dom.Elem, right: dom.Elem) -> t.Iterable[DiffItem]:
     if not has_content:
         return
 
-    inner = tuple(diff_seq(left.content, right.content))
+    inner = tuple(diff_seq(left.content, right.content, config=config))
     if not any(x.is_diff for x in inner):
         inner = (Same("..."),)  # collapse irrelevant content
     yield Nested(inner)
@@ -256,7 +267,7 @@ def _tag_open(tag: lxml.etree.QName, *, attrs: str | None) -> str:
 _MAX_ABBREV_VALUE = 4
 
 
-def _concise(item: dom.DOM, *, maxlen: int = 40) -> str:
+def _concise(item: dom.DOM, *, maxlen: int) -> str:
     # A "..." placeholder requires at least 3 chars,
     # so don't bother truncating short strings.
     maxlen = max(maxlen, _MAX_ABBREV_VALUE)

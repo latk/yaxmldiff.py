@@ -27,7 +27,9 @@ def test_diff_seq_with_lookahead() -> None:
     """Verify that the inner diff function can calculate valid diffs."""
 
     def diff_picture(left: str, right: str) -> str:
-        return _render_picture(list(diff._diff_seq_with_lookahead(left, right)))
+        return _render_picture(
+            list(diff._diff_seq_with_lookahead(left, right, config=diff.Config()))
+        )
 
     assert diff_picture("", "") == ""
     assert diff_picture("abc", "abc") == "a b c"
@@ -45,7 +47,7 @@ def test_collapse_common_context() -> None:
     """
 
     def diff_picture(left: str, right: str) -> str:
-        return _render_picture(list(diff.diff_seq(left, right)))
+        return _render_picture(list(diff.diff_seq(left, right, config=diff.Config())))
 
     # leading examples
     assert diff_picture("abcX", "abcY") == "a b c -X +Y"
