@@ -136,6 +136,23 @@ Example: changed attrs collapse content
 
 ```
 
+Example: collapse common context
+
+```pycon
+>>> print(compare_xml(
+...     "<root><a/><b/><c/><d/><e/><f/><changed-left/></root>",
+...     "<root><a/><b/><c/><d/><e/><f/><changed-right/></root>"))
+  <root>
+    ... skipped 3 lines
+    <d/>
+    <e/>
+    <f/>
+-   <changed-left/>
++   <changed-right/>
+  </root>
+
+```
+
 Example: can hande encoding declarations
 
 ```pycon

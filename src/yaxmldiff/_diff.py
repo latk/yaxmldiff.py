@@ -46,19 +46,32 @@ class Nested:
 
 
 def diff_seq(
-    left_items: t.Sequence[dom.DOM], right_items: t.Sequence[dom.DOM]
+    left_items: t.Sequence[dom.DOM],
+    right_items: t.Sequence[dom.DOM],
+    *,
+    context: int = 3,
 ) -> t.Iterable[DiffItem]:
     matcher = difflib.SequenceMatcher(isjunk=None, a=left_items, b=right_items)
-    for opcode, left_start, left_end, right_start, right_end in matcher.get_opcodes():
+    opcodes = matcher.get_opcodes()
+    for i, op in enumerate(opcodes):
+        opcode, left_start, left_end, right_start, right_end = op
         match opcode:
             case "equal":
-                for left in left_items[left_start:left_end]:
-                    yield Same(_concise(left))
+                position: t.Literal["start", "middle", "end"]
+                if i == 0:
+                    position = "start"
+                elif i == len(opcodes) - 1:
+                    position = "end"
+                else:
+                    position = "middle"
+                yield from _truncated_context(
+                    left_items[left_start:left_end], position=position, context=context
+                )
             case "delete" | "insert":
                 for left in left_items[left_start:left_end]:
-                    yield Left(_concise(left))
+                    yield (Left(_concise(left)))
                 for right in right_items[right_start:right_end]:
-                    yield Right(_concise(right))
+                    yield (Right(_concise(right)))
             case "replace":
                 yield from _diff_seq_with_lookahead(
                     left_items[left_start:left_end],
@@ -66,6 +79,26 @@ def diff_seq(
                 )
             case _:  # pragma: no cover
                 raise AssertionError(f"unreachable: {opcode=}")
+
+
+def _truncated_context(
+    items: t.Sequence[dom.DOM],
+    *,
+    position: t.Literal["start", "middle", "end"],
+    context: int,
+) -> t.Iterable[Same]:
+    if position == "start" and (skipped := len(items) - context) > 1:
+        yield Same(f"... skipped {skipped} lines")
+        yield from (Same(_concise(x)) for x in items[-context:])
+    elif position == "middle" and (skipped := len(items) - 2 * context) > 1:
+        yield from (Same(_concise(x)) for x in items[:context])
+        yield Same(f"... skipped {skipped} lines")
+        yield from (Same(_concise(x)) for x in items[-context:])
+    elif position == "end" and (skipped := len(items) - context) > 1:
+        yield from (Same(_concise(x)) for x in items[:context])
+        yield Same(f"... skipped {skipped} lines")
+    else:
+        yield from (Same(_concise(x)) for x in items)
 
 
 def _diff_seq_with_lookahead(
