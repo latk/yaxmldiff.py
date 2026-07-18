@@ -103,7 +103,7 @@ class _DiffWriter:
             self._buffer.write(content)
             self._buffer.write("\n")
         elif content:
-            self.write_same("...")
+            self.write_same("  ..." if indented else "...")
 
 
 def _compare_dom_top(
@@ -119,6 +119,8 @@ def _compare_dom_top(
                 writer.write_diff(_concise(left), None)
             case left, right:
                 _compare_dom(writer, left, right)
+            case _:  # pragma: no cover
+                raise AssertionError(f"unreachable: {pair=}")
 
 
 def _compare_dom(writer: _DiffWriter, left: dom.DOM, right: dom.DOM) -> None:
@@ -145,6 +147,8 @@ def _compare_dom(writer: _DiffWriter, left: dom.DOM, right: dom.DOM) -> None:
             writer.write_same("?>")
         case dom.Elem(), dom.Elem():
             _compare_elem(writer, left, right)
+        case _:  # pragma: no cover
+            raise TypeError(f"unreachable: {left=} {right=}")
 
 
 def _compare_elem(writer: _DiffWriter, left: dom.Elem, right: dom.Elem) -> None:
@@ -195,23 +199,14 @@ def _compare_attributes(
             case None, str() as right:
                 attrs.right_only.append(f'{key}="{right}"')
             case str() as left, str() as right if left == right:
-                attrs.same.append(_abbreviate_attr(key, left))
+                attrs.same.append(f'{key}="{_concise(left, maxlen=0)}"')
             case str() as left, str() as right:
                 attrs.left_only.append(f'{key}="{left}"')
                 attrs.right_only.append(f'{key}="{right}"')
-            case left, right:
+            case left, right:  # pragma: no cover
                 raise AssertionError(f"unreachable: {left=} {right=}")
 
     return attrs
-
-
-_MAX_ABBREV_VALUE = 4
-
-
-def _abbreviate_attr(key: str, value: str) -> str:
-    if len(value) > _MAX_ABBREV_VALUE:
-        value = "..."
-    return f'{key}="{value}"'
 
 
 def _tag_open(tag: lxml.etree.QName, *, attrs: str | None) -> str:
@@ -221,6 +216,9 @@ def _tag_open(tag: lxml.etree.QName, *, attrs: str | None) -> str:
     if attrs:
         out += f" {attrs}"
     return out
+
+
+_MAX_ABBREV_VALUE = 4
 
 
 def _concise(item: dom.DOM, *, maxlen: int = 40) -> str:
@@ -249,3 +247,5 @@ def _concise(item: dom.DOM, *, maxlen: int = 40) -> str:
             else:
                 out += "/>"
             return out
+        case _:  # pragma: no cover
+            raise TypeError(f"unreachable: {item=}")

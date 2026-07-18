@@ -85,7 +85,7 @@ Example: nested changed text, collapses other nodes
 
 ```
 
-Example: inserted node
+Example: inserted and removed nodes
 
 ```pycon
 >>> print(compare_xml("<r><a/></r>", "<r><a/><b/></r>"))
@@ -95,6 +95,16 @@ Example: inserted node
   </r>
 
 ```
+
+```pycon
+>>> print(compare_xml("<r><a/><b/></r>", "<r><a/></r>"))
+  <r>
+    <a/>
+-   <b/>
+  </r>
+
+```
+
 
 Example: changed attributes
 
@@ -109,6 +119,18 @@ Example: changed attributes
 +   changed="4"
 +   onlyb="1"
   />
+
+```
+
+Example: changed attrs collapse content
+
+```pycon
+>>> print(compare_xml("<a>content</a>", "<a attribute='value'>content</a>"))
+  <a
++   attribute="value"
+  >
+    ...
+  </a>
 
 ```
 
@@ -201,6 +223,28 @@ Example: can handle processing instructions
 -     echo 123;
 +     echo "abc";
     ?>
+  </a>
+
+```
+
+```pycon
+>>> print(compare_xml('<a><?math 3*3 ?></a>', '<a><?php echo "abc"; ?></a>'))
+  <a>
+-   <?math 3*3?>
++   <?php echo "abc";?>
+  </a>
+
+```
+
+Example: can diff nodes of different types
+
+```pycon
+>>> print(compare_xml('<a>text<!-- comment --></a>', '<a><element/><?pi?></a>'))
+  <a>
+-   text
++   <element/>
+-   <!-- comment -->
++   <?pi ?>
   </a>
 
 ```

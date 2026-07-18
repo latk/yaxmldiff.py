@@ -34,6 +34,7 @@ dependencies = [
 dev = [
     "mypy>=2.2.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.21",
     "types-lxml>=2026.2.16",
 ]
@@ -104,3 +105,7 @@ ignore = [
 "tests/**.py" = [
   "D100",  # undocumented-public-module
 ]
+
+[tool.coverage]
+run.branch = true
+report.show_missing = true

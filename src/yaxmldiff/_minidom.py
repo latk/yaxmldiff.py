@@ -37,11 +37,13 @@ def parse(elem: lxml.etree.Element) -> DOM:
     if elem.tag is lxml.etree.PI:  # type: ignore[comparison-overlap]
         return PI(elem.target, (elem.text or "").strip())  # type: ignore[unreachable] # pyright: ignore[reportAttributeAccessIssue]
 
-    tag = elem.tag
-    if isinstance(tag, str):
-        tag = lxml.etree.QName(tag)
-    if not isinstance(tag, lxml.etree.QName):
-        raise TypeError(f"unsupported special element: {tag=} {type(tag)=}")
+    match elem.tag:
+        case str():
+            tag = lxml.etree.QName(elem.tag)
+        case lxml.etree.QName():  # pragma: no cover  # never observed in practice
+            tag = elem.tag
+        case tag:  # pragma: no cover  # all known cases have been handled
+            raise TypeError(f"unsupported special element: {tag=} {type(tag)=}")
     attrs = dict(elem.attrib)
     content: list[DOM] = []
     if elem.text and (text := elem.text.strip()):

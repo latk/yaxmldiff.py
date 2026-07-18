@@ -23,7 +23,7 @@ types:
 
 # run the test suite
 test *args:
-    pytest -v "$@"
+    pytest -v --cov --cov-fail-under=95 "$@"
 
 # Run tests under multiple configurations (Python and lxml versions)
 multitest *args:
