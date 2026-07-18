@@ -1,0 +1,57 @@
+# yaxmldiff is Yet Another XML Differ <https://github.com/latk/yaxmldiff.py>
+# SPDX-FileCopyrightText: 2021-2026 Lukas Atkinson
+# SPDX-License-Identifier: Apache-2.0
+
+"""Simplified DOM that's easier to diff."""
+
+import dataclasses
+import typing as t
+
+import lxml.etree
+
+DOM: t.TypeAlias = "Elem | str | Comment | PI"
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
+class Elem:
+    tag: lxml.etree.QName
+    attrs: t.Mapping[str, str]
+    content: t.Sequence[DOM]
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
+class Comment:
+    content: str
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
+class PI:
+    target: str
+    content: str
+
+
+def parse(elem: lxml.etree.Element) -> DOM:
+    if elem.tag is lxml.etree.Comment:  # type: ignore[comparison-overlap]
+        return Comment((elem.text or "").strip())  # type: ignore[unreachable]
+
+    if elem.tag is lxml.etree.PI:  # type: ignore[comparison-overlap]
+        return PI(elem.target, (elem.text or "").strip())  # type: ignore[unreachable] # pyright: ignore[reportAttributeAccessIssue]
+
+    tag = elem.tag
+    if isinstance(tag, str):
+        tag = lxml.etree.QName(tag)
+    if not isinstance(tag, lxml.etree.QName):
+        raise TypeError(f"unsupported special element: {tag=} {type(tag)=}")
+    attrs = dict(elem.attrib)
+    content: list[DOM] = []
+    if elem.text and (text := elem.text.strip()):
+        content.append(text)
+    for child in list(elem):
+        content.extend(parse_top(child))
+    return Elem(tag, attrs, tuple(content))
+
+
+def parse_top(elem: lxml.etree.Element) -> t.Iterable[DOM]:
+    yield parse(elem)
+    if elem.tail and (tail := elem.tail.strip()):
+        yield tail

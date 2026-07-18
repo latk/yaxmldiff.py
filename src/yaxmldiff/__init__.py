@@ -19,6 +19,8 @@ import typing as t
 import lxml.etree
 from lxml.etree import _Element as Element
 
+from . import _minidom as dom
+
 __all__ = ["compare_xml"]
 
 
@@ -39,7 +41,7 @@ def compare_xml(
         right = lxml.etree.XML(right.encode())
 
     writer = _DiffWriter()
-    _compare_elem_with_trailer(writer, left, right)
+    _compare_dom_top(writer, dom.parse_top(left), dom.parse_top(right))
 
     if writer.has_diff:
         return str(writer)
@@ -104,42 +106,53 @@ class _DiffWriter:
             self.write_same("...")
 
 
-def _compare_elem_with_trailer(
-    writer: _DiffWriter, left: Element, right: Element
+def _compare_dom_top(
+    writer: _DiffWriter,
+    left_items: t.Iterable[dom.DOM],
+    right_items: t.Iterable[dom.DOM],
 ) -> None:
-    _compare_elem(writer, left, right)
-    assert not isinstance(left.tail, bytes)
-    assert not isinstance(right.tail, bytes)
-    _compare_text(writer, left.tail, right.tail)
+    for pair in itertools.zip_longest(left_items, right_items):
+        match pair:
+            case None, right:
+                writer.write_diff(None, _concise(right))
+            case left, None:
+                writer.write_diff(_concise(left), None)
+            case left, right:
+                _compare_dom(writer, left, right)
 
 
-def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
-    if left.tag != right.tag:
-        writer.write_diff(_tag_only(left), _tag_only(right))
-        return
+def _compare_dom(writer: _DiffWriter, left: dom.DOM, right: dom.DOM) -> None:
+    match (left, right):
+        case _ if left == right:
+            writer.write_same(_concise(left))
+        case _ if type(left) is not type(right):
+            writer.write_diff(_concise(left), _concise(right))
+        case str(), str():
+            writer.write_diff(left, right)
+        case dom.Elem(), dom.Elem() if left.tag != right.tag:
+            writer.write_diff(_concise(left), _concise(right))
+        case dom.Comment(), dom.Comment():
+            writer.write_same("<!--")
+            with writer.indented() as inner:
+                _compare_dom(inner, left.content, right.content)
+            writer.write_same("-->")
+        case dom.PI(), dom.PI() if left.target != right.target:
+            writer.write_diff(_concise(left), _concise(right))
+        case dom.PI(), dom.PI():
+            writer.write_same(f"<?{left.target}")
+            with writer.indented() as inner:
+                _compare_dom(inner, left.content, right.content)
+            writer.write_same("?>")
+        case dom.Elem(), dom.Elem():
+            _compare_elem(writer, left, right)
 
-    if (left_comment := _Comment.parse(left)) and (
-        right_comment := _Comment.parse(right)
-    ):
-        _Comment.compare(writer, left_comment, right_comment)
-        return
 
-    if (left_pi := _PI.parse(left)) and (right_pi := _PI.parse(right)):
-        _PI.compare(writer, left_pi, right_pi)
-        return
-
-    left_tag, left_attrs = _tag_and_attrs(left)
-    _right_tag, right_attrs = _tag_and_attrs(right)
-    tagname = left_tag
-    has_content = len(left) or len(right) or left.text or right.text
-
-    # write the opening tag, possibly showing differing attributes
-    attrs = _compare_attributes(left_attrs, right_attrs)
+def _compare_elem(writer: _DiffWriter, left: dom.Elem, right: dom.Elem) -> None:
+    has_content = len(left.content) or len(right.content)
+    closer = ">" if has_content else "/>"
+    attrs = _compare_attributes(left.attrs, right.attrs)
     if attrs.left_only or attrs.right_only:
-        if attrs.same:
-            writer.write_same(f"<{tagname} " + " ".join(attrs.same))
-        else:
-            writer.write_same(f"<{tagname}")
+        writer.write_same(_tag_open(left.tag, attrs=" ".join(attrs.same)))
 
         with writer.indented() as inner:
             for left_attr in attrs.left_only:
@@ -147,23 +160,20 @@ def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
             for right_attr in attrs.right_only:
                 inner.write_diff(None, right_attr)
 
-        if has_content:
-            writer.write_same(">")
-        else:
-            writer.write_same("/>")
-            return
-
-    elif has_content:
-        writer.write_same(f"<{tagname} ...>" if attrs.same else f"<{tagname}>")
+        writer.write_same(closer)
 
     else:
-        writer.write_same(f"<{tagname} .../>" if attrs.same else f"<{tagname}/>")
+        writer.write_same(
+            f"{_tag_open(left.tag, attrs='...' if attrs.same else None)}{closer}"
+        )
+
+    if not has_content:
         return
 
     with writer.only_show_if_diff(indented=True) as inner:
-        _compare_content(inner, left, right)
+        _compare_dom_top(inner, left.content, right.content)
 
-    writer.write_same(f"</{tagname}>")
+    writer.write_same(f"</{left.tag.localname}>")
 
 
 @dataclasses.dataclass
@@ -204,112 +214,38 @@ def _abbreviate_attr(key: str, value: str) -> str:
     return f'{key}="{value}"'
 
 
-def _compare_content(writer: _DiffWriter, left: Element, right: Element) -> None:
-    assert left.text is None or isinstance(left.text, str)
-    assert right.text is None or isinstance(right.text, str)
-    _compare_text(writer, left.text, right.text)
-
-    for left_child, right_child in itertools.zip_longest(list(left), list(right)):
-        if left_child is None:
-            writer.write_diff(None, _tag_only(right_child))
-        elif right_child is None:
-            writer.write_diff(_tag_only(left_child), None)
-        else:
-            _compare_elem_with_trailer(writer, left_child, right_child)
-
-
-def _compare_text(writer: _DiffWriter, left: str | None, right: str | None) -> None:
-    left = "" if left is None else left.strip()
-    right = "" if right is None else right.strip()
-
-    if left == right == "":
-        return
-
-    if left == right:
-        writer.write_same("...")
-    else:
-        writer.write_diff(left if left else None, right if right else None)
-
-
-def _tag_only(elem: Element) -> str:
-    if _Comment.parse(elem):
-        return "<!-- ... -->"
-
-    if pi := _PI.parse(elem):
-        return f"<?{pi.target} ...?>"
-
-    tagname, attrs = _tag_and_attrs(elem)
-    abbreviated = f"<{tagname}"
-    match attrs:
-        case {"xmlns": namespace, **other} if other:
-            abbreviated += f' xmlns="{namespace}" ...'
-        case {"xmlns": namespace}:
-            abbreviated += f' xmlns="{namespace}"'
-        case _ if attrs:
-            abbreviated += " ..."
-    if len(elem) or elem.text:
-        abbreviated += f">...</{tagname}>"
-    else:
-        abbreviated += "/>"
-    return abbreviated
-
-
-def _tag_and_attrs(elem: lxml.etree.Element) -> tuple[str, t.Mapping[str, str]]:
-    tag = elem.tag
-    if isinstance(tag, bytes | bytearray):
-        tag = tag.decode(encoding="utf-8")
-    if isinstance(tag, str):
-        tag = lxml.etree.QName(tag)
-    if not isinstance(tag, lxml.etree.QName):
-        raise TypeError(f"Unsupported special element: {tag=} {type(tag)=}")
-    attrs: dict[str, str] = {}
+def _tag_open(tag: lxml.etree.QName, *, attrs: str | None) -> str:
+    out = f"<{tag.localname}"
     if tag.namespace:
-        attrs["xmlns"] = tag.namespace
-    attrs.update(elem.attrib.items())
-    return tag.localname, attrs
+        out += f' xmlns="{tag.namespace}"'
+    if attrs:
+        out += f" {attrs}"
+    return out
 
 
-@dataclasses.dataclass
-class _Comment:
-    content: str
+def _concise(item: dom.DOM, *, maxlen: int = 40) -> str:
+    # A "..." placeholder requires at least 3 chars,
+    # so don't bother truncating short strings.
+    maxlen = max(maxlen, _MAX_ABBREV_VALUE)
 
-    @classmethod
-    def parse(cls, elem: lxml.etree.Element) -> "_Comment | None":
-        if elem.tag is not lxml.etree.Comment:  # type: ignore[comparison-overlap]
-            return None
-        return cls((elem.text or "").strip())  # type: ignore[unreachable]
-
-    @classmethod
-    def compare(cls, writer: _DiffWriter, left: "_Comment", right: "_Comment") -> None:
-        if left.content == right.content:
-            writer.write_same(f"<!-- {left.content} -->")
-            return
-        writer.write_same("<!--")
-        with writer.indented() as inner:
-            inner.write_diff(left.content, right.content)
-        writer.write_same("-->")
-
-
-@dataclasses.dataclass
-class _PI:
-    target: str
-    content: str
-
-    @classmethod
-    def parse(cls, elem: lxml.etree.Element) -> "_PI | None":
-        if elem.tag is not lxml.etree.PI:  # type: ignore[comparison-overlap]
-            return None
-        return cls(elem.target, (elem.text or "").strip())  # type: ignore[unreachable]
-
-    @classmethod
-    def compare(cls, writer: _DiffWriter, left: "_PI", right: "_PI") -> None:
-        if left == right:
-            writer.write_same(f"<?{left.target} ...?>")
-            return
-        if left.target != right.target:
-            writer.write_diff(f"<?{left.target} ...?>", f"<?{right.target} ...?>")
-            return
-        writer.write_same(f"<?{left.target}")
-        with writer.indented() as inner:
-            inner.write_diff(left.content, right.content)
-        writer.write_same("?>")
+    match item:
+        case str():
+            if len(item) <= maxlen:
+                return item
+            if maxlen <= _MAX_ABBREV_VALUE:  # small budget, just replace with ellipsis
+                return "..."
+            # otherwise, lots of space is available, so truncate
+            return f"{item[: maxlen - len('...')]}..."
+        case dom.Comment():
+            template_len = len("<!--  -->")
+            return f"<!-- {_concise(item.content, maxlen=maxlen - template_len)} -->"
+        case dom.PI():
+            template_len = len("<? ?>") + len(item.target)
+            return f"<?{item.target} {_concise(item.content, maxlen=maxlen - template_len)}?>"
+        case dom.Elem():
+            out = _tag_open(item.tag, attrs=("..." if item.attrs else None))
+            if item.content:
+                out += f">...</{item.tag.localname}>"
+            else:
+                out += "/>"
+            return out
