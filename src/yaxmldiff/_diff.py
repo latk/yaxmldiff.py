@@ -5,7 +5,7 @@
 """Produce a data structure that represents an XML diff."""
 
 import dataclasses
-import itertools
+import difflib
 import typing as t
 
 import lxml.etree
@@ -48,15 +48,76 @@ class Nested:
 def diff_seq(
     left_items: t.Sequence[dom.DOM], right_items: t.Sequence[dom.DOM]
 ) -> t.Iterable[DiffItem]:
-    for left, right in itertools.zip_longest(left_items, right_items, fillvalue=None):
-        if left is not None and right is not None:
+    matcher = difflib.SequenceMatcher(isjunk=None, a=left_items, b=right_items)
+    for opcode, left_start, left_end, right_start, right_end in matcher.get_opcodes():
+        match opcode:
+            case "equal":
+                for left in left_items[left_start:left_end]:
+                    yield Same(_concise(left))
+            case "delete" | "insert":
+                for left in left_items[left_start:left_end]:
+                    yield Left(_concise(left))
+                for right in right_items[right_start:right_end]:
+                    yield Right(_concise(right))
+            case "replace":
+                yield from _diff_seq_with_lookahead(
+                    left_items[left_start:left_end],
+                    right_items[right_start:right_end],
+                )
+            case _:  # pragma: no cover
+                raise AssertionError(f"unreachable: {opcode=}")
+
+
+def _diff_seq_with_lookahead(
+    left_items: t.Sequence[dom.DOM],
+    right_items: t.Sequence[dom.DOM],
+    *,
+    lookahead: int = 30,  # fixed window to ensure linear performance
+) -> t.Iterable[DiffItem]:
+    """A basic diff algorithm that's good at detecting single inserted lines."""
+    left_i = right_i = 0
+    while left_i < len(left_items) and right_i < len(right_items):
+        left = left_items[left_i]
+        right = right_items[right_i]
+
+        if left == right:
+            yield Same(_concise(left))
+            left_i += 1
+            right_i += 1
+            continue
+
+        # try to find the current item on the other side
+        try:
+            left_next = right_items.index(left, right_i, right_i + lookahead)
+        except ValueError:
+            left_next = lookahead
+        try:
+            right_next = left_items.index(right, left_i, left_i + lookahead)
+        except ValueError:
+            right_next = lookahead
+
+        # If neither item was found on the other side within the lookahead window,
+        # treat this as a true difference, and compare more closely.
+        if left_next >= lookahead and right_next >= lookahead:
             yield from diff(left, right)
-        elif left is not None:
+            left_i += 1
+            right_i += 1
+            continue
+
+        # If the right item appears earlier in the context,
+        # treat the left item as inserted, and vice versa.
+        if right_next <= left_next:
             yield Left(_concise(left))
-        elif right is not None:
+            left_i += 1
+        else:
             yield Right(_concise(right))
-        else:  # pragma: no cover
-            raise AssertionError(f"unreachable: {left=} {right=}")
+            right_i += 1
+
+    # yield remaining items
+    for left in left_items[left_i:]:
+        yield Left(_concise(left))
+    for right in right_items[right_i:]:
+        yield Right(_concise(right))
 
 
 def diff(left: dom.DOM, right: dom.DOM) -> t.Iterable[DiffItem]:
@@ -92,7 +153,7 @@ def diff(left: dom.DOM, right: dom.DOM) -> t.Iterable[DiffItem]:
 def _diff_elem(left: dom.Elem, right: dom.Elem) -> t.Iterable[DiffItem]:
     has_content = len(left.content) or len(right.content)
     closer = ">" if has_content else "/>"
-    attrs = _compare_attributes(left.attrs, right.attrs)
+    attrs = _compare_attributes(dict(left.attrs), dict(right.attrs))
     if attrs.left_only or attrs.right_only:
         yield Same(_tag_open(left.tag, attrs=" ".join(attrs.same)))
 

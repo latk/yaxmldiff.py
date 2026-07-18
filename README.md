@@ -88,19 +88,21 @@ Example: nested changed text, collapses other nodes
 Example: inserted and removed nodes
 
 ```pycon
->>> print(compare_xml("<r><a/></r>", "<r><a/><b/></r>"))
+>>> print(compare_xml("<r><a/><c/></r>", "<r><a/><b/><c/></r>"))
   <r>
     <a/>
 +   <b/>
+    <c/>
   </r>
 
 ```
 
 ```pycon
->>> print(compare_xml("<r><a/><b/></r>", "<r><a/></r>"))
+>>> print(compare_xml("<r><a/><b/><c/></r>", "<r><a/><c/></r>"))
   <r>
     <a/>
 -   <b/>
+    <c/>
   </r>
 
 ```

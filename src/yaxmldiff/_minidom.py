@@ -15,7 +15,8 @@ DOM: t.TypeAlias = "Elem | str | Comment | PI"
 @dataclasses.dataclass(slots=True, frozen=True)
 class Elem:
     tag: lxml.etree.QName
-    attrs: t.Mapping[str, str]
+    attrs: t.Sequence[tuple[str, str]]
+    """Effectively a hashable `Mapping[str,str]`, guaranteed to have consistent order."""
     content: t.Sequence[DOM]
 
 
@@ -44,7 +45,7 @@ def parse(elem: lxml.etree.Element) -> DOM:
             tag = elem.tag
         case tag:  # pragma: no cover  # all known cases have been handled
             raise TypeError(f"unsupported special element: {tag=} {type(tag)=}")
-    attrs = dict(elem.attrib)
+    attrs = tuple(sorted(elem.attrib.items()))
     content: list[DOM] = []
     if elem.text and (text := elem.text.strip()):
         content.append(text)
