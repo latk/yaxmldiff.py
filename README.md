@@ -26,6 +26,13 @@ Compare two XML documents.
 If the documents are given as strings, they are parsed first.
 Alternatively, the documents can be given as an `lxml.etree` object.
 
+Args:
+
+* left: an input document
+* right: an input document
+* context: how many lines of context to preserve around each change
+* comments: whether comments and processing instructions will be diffed as well (default: true)
+
 Returns: None if both are equal, a diff otherwise.
 
 Signature:
@@ -34,6 +41,9 @@ Signature:
 def compare_xml(
     left: str | Element,
     right: str | Element,
+    *,
+    context: int = 3,
+    comments: bool = True,
 ) -> str | None:
 ```
 
