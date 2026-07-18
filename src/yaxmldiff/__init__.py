@@ -114,18 +114,28 @@ def _compare_elem_with_trailer(
 
 
 def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
-    left_tag, left_attrs = _tag_and_attrs(left)
-    right_tag, right_attrs = _tag_and_attrs(right)
-    if left_tag != right_tag:
+    if left.tag != right.tag:
         writer.write_diff(_tag_only(left), _tag_only(right))
         return
 
+    if (left_comment := _Comment.parse(left)) and (
+        right_comment := _Comment.parse(right)
+    ):
+        _Comment.compare(writer, left_comment, right_comment)
+        return
+
+    if (left_pi := _PI.parse(left)) and (right_pi := _PI.parse(right)):
+        _PI.compare(writer, left_pi, right_pi)
+        return
+
+    left_tag, left_attrs = _tag_and_attrs(left)
+    _right_tag, right_attrs = _tag_and_attrs(right)
     tagname = left_tag
     has_content = len(left) or len(right) or left.text or right.text
 
     # write the opening tag, possibly showing differing attributes
     attrs = _compare_attributes(left_attrs, right_attrs)
-    if attrs.left_only or attrs.changed or attrs.right_only:
+    if attrs.left_only or attrs.right_only:
         if attrs.same:
             writer.write_same(f"<{tagname} " + " ".join(attrs.same))
         else:
@@ -134,8 +144,6 @@ def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
         with writer.indented() as inner:
             for left_attr in attrs.left_only:
                 inner.write_diff(left_attr, None)
-            for left_attr, right_attr in attrs.changed:
-                inner.write_diff(left_attr, right_attr)
             for right_attr in attrs.right_only:
                 inner.write_diff(None, right_attr)
 
@@ -162,14 +170,13 @@ def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
 class _AttrDiff:
     same: list[str]
     left_only: list[str]
-    changed: list[tuple[str, str]]
     right_only: list[str]
 
 
 def _compare_attributes(
     left_attrs: t.Mapping[str, str], right_attrs: t.Mapping[str, str]
 ) -> _AttrDiff:
-    attrs = _AttrDiff([], [], [], [])
+    attrs = _AttrDiff([], [], [])
 
     for key in sorted({*left_attrs, *right_attrs}):
         match left_attrs.get(key), right_attrs.get(key):
@@ -180,9 +187,10 @@ def _compare_attributes(
             case str() as left, str() as right if left == right:
                 attrs.same.append(_abbreviate_attr(key, left))
             case str() as left, str() as right:
-                attrs.changed.append((f'{key}="{left}"', f'{key}="{right}"'))
+                attrs.left_only.append(f'{key}="{left}"')
+                attrs.right_only.append(f'{key}="{right}"')
             case left, right:
-                raise AssertionError(f"unreachable: {left=} {right=}")  # noqa: TRY003
+                raise AssertionError(f"unreachable: {left=} {right=}")
 
     return attrs
 
@@ -224,10 +232,21 @@ def _compare_text(writer: _DiffWriter, left: str | None, right: str | None) -> N
 
 
 def _tag_only(elem: Element) -> str:
+    if _Comment.parse(elem):
+        return "<!-- ... -->"
+
+    if pi := _PI.parse(elem):
+        return f"<?{pi.target} ...?>"
+
     tagname, attrs = _tag_and_attrs(elem)
     abbreviated = f"<{tagname}"
-    if attrs:
-        abbreviated += " ..."
+    match attrs:
+        case {"xmlns": namespace, **other} if other:
+            abbreviated += f' xmlns="{namespace}" ...'
+        case {"xmlns": namespace}:
+            abbreviated += f' xmlns="{namespace}"'
+        case _ if attrs:
+            abbreviated += " ..."
     if len(elem) or elem.text:
         abbreviated += f">...</{tagname}>"
     else:
@@ -241,9 +260,56 @@ def _tag_and_attrs(elem: lxml.etree.Element) -> tuple[str, t.Mapping[str, str]]:
         tag = tag.decode(encoding="utf-8")
     if isinstance(tag, str):
         tag = lxml.etree.QName(tag)
-    assert isinstance(tag, lxml.etree.QName)
+    if not isinstance(tag, lxml.etree.QName):
+        raise TypeError(f"Unsupported special element: {tag=} {type(tag)=}")
     attrs: dict[str, str] = {}
     if tag.namespace:
         attrs["xmlns"] = tag.namespace
     attrs.update(elem.attrib.items())
     return tag.localname, attrs
+
+
+@dataclasses.dataclass
+class _Comment:
+    content: str
+
+    @classmethod
+    def parse(cls, elem: lxml.etree.Element) -> "_Comment | None":
+        if elem.tag is not lxml.etree.Comment:  # type: ignore[comparison-overlap]
+            return None
+        return cls((elem.text or "").strip())  # type: ignore[unreachable]
+
+    @classmethod
+    def compare(cls, writer: _DiffWriter, left: "_Comment", right: "_Comment") -> None:
+        if left.content == right.content:
+            writer.write_same(f"<!-- {left.content} -->")
+            return
+        writer.write_same("<!--")
+        with writer.indented() as inner:
+            inner.write_diff(left.content, right.content)
+        writer.write_same("-->")
+
+
+@dataclasses.dataclass
+class _PI:
+    target: str
+    content: str
+
+    @classmethod
+    def parse(cls, elem: lxml.etree.Element) -> "_PI | None":
+        if elem.tag is not lxml.etree.PI:  # type: ignore[comparison-overlap]
+            return None
+        return cls(elem.target, (elem.text or "").strip())  # type: ignore[unreachable]
+
+    @classmethod
+    def compare(cls, writer: _DiffWriter, left: "_PI", right: "_PI") -> None:
+        if left == right:
+            writer.write_same(f"<?{left.target} ...?>")
+            return
+        if left.target != right.target:
+            writer.write_diff(f"<?{left.target} ...?>", f"<?{right.target} ...?>")
+            return
+        writer.write_same(f"<?{left.target}")
+        with writer.indented() as inner:
+            inner.write_diff(left.content, right.content)
+        writer.write_same("?>")

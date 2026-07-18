@@ -97,6 +97,7 @@ ignore = [
   "S101",  # allow asserts
   "D203", "D213",  # docstring positioning rules
   "D401",  # allow descriptive (non-imperative) docstrings
+  "TRY003",  # all inline exception messages
 ]
 
 [tool.ruff.lint.per-file-ignores]

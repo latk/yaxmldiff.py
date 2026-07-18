@@ -104,8 +104,8 @@ Example: changed attributes
 ...     "<a onlyb='1' both='2' changed='4'/>",
 ... ))
   <a both="2"
--   onlya="1"
 -   changed="3"
+-   onlya="1"
 +   changed="4"
 +   onlyb="1"
   />
@@ -164,16 +164,44 @@ Example: can handle XML namespaces
 ...  '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
 ...  '<html><body>no namespaces</body></html>',
 ... ))
-  <html
--   xmlns="http://www.w3.org/1999/xhtml"
-  >
-    <body
--     xmlns="http://www.w3.org/1999/xhtml"
-    >
--     implicit namespaces
-+     no namespaces
-    </body>
-  </html>
+- <html xmlns="http://www.w3.org/1999/xhtml">...</html>
++ <html>...</html>
+
+```
+
+Example: can handle comments
+
+```pycon
+>>> print(compare_xml('<a><!-- foo --></a>', '<a><!-- bar --></a>'))
+  <a>
+    <!--
+-     foo
++     bar
+    -->
+  </a>
+
+```
+
+```pycon
+>>> print(compare_xml('<a><!-- same --><x/></a>', '<a><!-- same --><y/></a>'))
+  <a>
+    <!-- same -->
+-   <x/>
++   <y/>
+  </a>
+
+```
+
+Example: can handle processing instructions
+
+```pycon
+>>> print(compare_xml('<a><?php echo 123; ?></a>', '<a><?php echo "abc"; ?></a>'))
+  <a>
+    <?php
+-     echo 123;
++     echo "abc";
+    ?>
+  </a>
 
 ```
 
