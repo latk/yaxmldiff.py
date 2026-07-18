@@ -25,6 +25,7 @@ def compare_xml(
     right: str | Element,
     *,
     context: int = 3,
+    comments: bool = True,
 ) -> str | None:
     r"""Compare two XML documents.
 
@@ -34,9 +35,13 @@ def compare_xml(
       left: an input document
       right: an input document
       context: how many lines of context to preserve around each change
+      comments: whether comments and processing instructions will be diffed as well (default: true)
 
     Returns: None if both are equal, a diff otherwise.
     """
+    diff_config = _diff.Config(context=context)
+    dom_config = _minidom.Config(comments=comments)
+
     if isinstance(left, str):
         left = lxml.etree.XML(left.encode())
 
@@ -45,9 +50,9 @@ def compare_xml(
 
     diff = list(
         _diff.diff_seq(
-            list(_minidom.parse_top(left)),
-            list(_minidom.parse_top(right)),
-            config=_diff.Config(context=context),
+            list(_minidom.parse_top(left, config=dom_config)),
+            list(_minidom.parse_top(right, config=dom_config)),
+            config=diff_config,
         )
     )
 

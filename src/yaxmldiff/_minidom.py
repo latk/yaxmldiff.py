@@ -9,6 +9,13 @@ import typing as t
 
 import lxml.etree
 
+
+@dataclasses.dataclass
+class Config:
+    comments: bool = True
+    """Whether comment nodes and PI nodes are included in the DOM."""
+
+
 DOM: t.TypeAlias = "Elem | str | Comment | PI"
 
 
@@ -31,12 +38,16 @@ class PI:
     content: str
 
 
-def parse(elem: lxml.etree.Element) -> DOM:
+def parse(elem: lxml.etree.Element, *, config: Config) -> "DOM | None":
     if elem.tag is lxml.etree.Comment:  # type: ignore[comparison-overlap]
-        return Comment((elem.text or "").strip())  # type: ignore[unreachable]
+        if not config.comments:  # type: ignore[unreachable]
+            return None
+        return Comment((elem.text or "").strip())
 
     if elem.tag is lxml.etree.PI:  # type: ignore[comparison-overlap]
-        return PI(elem.target, (elem.text or "").strip())  # type: ignore[unreachable] # pyright: ignore[reportAttributeAccessIssue]
+        if not config.comments:  # type: ignore[unreachable]
+            return None
+        return PI(elem.target, (elem.text or "").strip())  # pyright: ignore[reportAttributeAccessIssue]
 
     match elem.tag:
         case str():
@@ -50,11 +61,12 @@ def parse(elem: lxml.etree.Element) -> DOM:
     if elem.text and (text := elem.text.strip()):
         content.append(text)
     for child in list(elem):
-        content.extend(parse_top(child))
+        content.extend(parse_top(child, config=config))
     return Elem(tag, attrs, tuple(content))
 
 
-def parse_top(elem: lxml.etree.Element) -> t.Iterable[DOM]:
-    yield parse(elem)
+def parse_top(elem: lxml.etree.Element, *, config: Config) -> t.Iterable[DOM]:
+    if (dom := parse(elem, config=config)) is not None:
+        yield dom
     if elem.tail and (tail := elem.tail.strip()):
         yield tail

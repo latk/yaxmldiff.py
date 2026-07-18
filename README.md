@@ -210,7 +210,7 @@ Example: can handle XML namespaces
 
 ```
 
-Example: can handle comments
+Example: can optionally handle comments
 
 ```pycon
 >>> print(compare_xml('<a><!-- foo --></a>', '<a><!-- bar --></a>'))
@@ -227,6 +227,17 @@ Example: can handle comments
 >>> print(compare_xml('<a><!-- same --><x/></a>', '<a><!-- same --><y/></a>'))
   <a>
     <!-- same -->
+-   <x/>
++   <y/>
+  </a>
+
+```
+
+```pycon
+>>> print(compare_xml('<a><!-- foo --></a>', '<a><!-- bar --></a>', comments=False))
+None
+>>> print(compare_xml('<a><!-- same --><x/></a>', '<a><!-- same --><y/></a>', comments=False))
+  <a>
 -   <x/>
 +   <y/>
   </a>
