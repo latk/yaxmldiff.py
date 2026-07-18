@@ -143,6 +143,40 @@ Example: pre-parse documents
 
 ```
 
+Example: can handle XML namespaces
+
+```pycon
+>>> print(compare_xml(
+...  '<html:html xmlns:html="http://www.w3.org/1999/xhtml"><html:body>explicit namespaces</html:body></html:html>',
+...  '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
+... ))
+  <html ...>
+    <body ...>
+-     explicit namespaces
++     implicit namespaces
+    </body>
+  </html>
+
+```
+
+```pycon
+>>> print(compare_xml(
+...  '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
+...  '<html><body>no namespaces</body></html>',
+... ))
+  <html
+-   xmlns="http://www.w3.org/1999/xhtml"
+  >
+    <body
+-     xmlns="http://www.w3.org/1999/xhtml"
+    >
+-     implicit namespaces
++     no namespaces
+    </body>
+  </html>
+
+```
+
 ## Related software
 
 There are tons of XML diffing tools for Python.

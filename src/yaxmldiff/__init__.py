@@ -17,7 +17,6 @@ import itertools
 import typing as t
 
 import lxml.etree
-from lxml.etree import _Attrib as Attrib
 from lxml.etree import _Element as Element
 
 __all__ = ["compare_xml"]
@@ -115,15 +114,17 @@ def _compare_elem_with_trailer(
 
 
 def _compare_elem(writer: _DiffWriter, left: Element, right: Element) -> None:
-    if left.tag != right.tag:
+    left_tag, left_attrs = _tag_and_attrs(left)
+    right_tag, right_attrs = _tag_and_attrs(right)
+    if left_tag != right_tag:
         writer.write_diff(_tag_only(left), _tag_only(right))
         return
 
-    tagname = _tagname(left)
+    tagname = left_tag
     has_content = len(left) or len(right) or left.text or right.text
 
     # write the opening tag, possibly showing differing attributes
-    attrs = _compare_attributes(left.attrib, right.attrib)
+    attrs = _compare_attributes(left_attrs, right_attrs)
     if attrs.left_only or attrs.changed or attrs.right_only:
         if attrs.same:
             writer.write_same(f"<{tagname} " + " ".join(attrs.same))
@@ -165,24 +166,21 @@ class _AttrDiff:
     right_only: list[str]
 
 
-def _compare_attributes(left_attrs: Attrib, right_attrs: Attrib) -> _AttrDiff:
+def _compare_attributes(
+    left_attrs: t.Mapping[str, str], right_attrs: t.Mapping[str, str]
+) -> _AttrDiff:
     attrs = _AttrDiff([], [], [], [])
 
-    for key in sorted({*left_attrs.keys(), *right_attrs.keys()}):
+    for key in sorted({*left_attrs, *right_attrs}):
         match left_attrs.get(key), right_attrs.get(key):
             case str() as left, None:
-                attrs.left_only.append(_abbreviate_attr(key, left))
+                attrs.left_only.append(f'{key}="{left}"')
             case None, str() as right:
-                attrs.right_only.append(_abbreviate_attr(key, right))
+                attrs.right_only.append(f'{key}="{right}"')
             case str() as left, str() as right if left == right:
                 attrs.same.append(_abbreviate_attr(key, left))
             case str() as left, str() as right:
-                attrs.changed.append(
-                    (
-                        f'{key}="{left}"',
-                        f'{key}="{right}"',
-                    )
-                )
+                attrs.changed.append((f'{key}="{left}"', f'{key}="{right}"'))
             case left, right:
                 raise AssertionError(f"unreachable: {left=} {right=}")  # noqa: TRY003
 
@@ -226,9 +224,9 @@ def _compare_text(writer: _DiffWriter, left: str | None, right: str | None) -> N
 
 
 def _tag_only(elem: Element) -> str:
-    tagname = _tagname(elem)
+    tagname, attrs = _tag_and_attrs(elem)
     abbreviated = f"<{tagname}"
-    if elem.attrib:
+    if attrs:
         abbreviated += " ..."
     if len(elem) or elem.text:
         abbreviated += f">...</{tagname}>"
@@ -237,17 +235,15 @@ def _tag_only(elem: Element) -> str:
     return abbreviated
 
 
-def _tagname(tag: str | bytes | bytearray | lxml.etree.QName | Element) -> str:
-    """A tagname, for display purposes only."""
-    if isinstance(tag, Element):
-        tag = tag.tag
-    match tag:
-        case str():
-            return tag
-        case lxml.etree.QName():
-            # Returning `.text` would be unambiguous but too verbose.
-            # In nearly all cases, the `.localname` will be sufficient.
-            return tag.localname
-        case bytes() | bytearray():
-            # Backslashes aren't valid syntax, but should make the rare non-UTF-8 name stand out.
-            return tag.decode(encoding="utf-8", errors="backslashreplace")
+def _tag_and_attrs(elem: lxml.etree.Element) -> tuple[str, t.Mapping[str, str]]:
+    tag = elem.tag
+    if isinstance(tag, bytes | bytearray):
+        tag = tag.decode(encoding="utf-8")
+    if isinstance(tag, str):
+        tag = lxml.etree.QName(tag)
+    assert isinstance(tag, lxml.etree.QName)
+    attrs: dict[str, str] = {}
+    if tag.namespace:
+        attrs["xmlns"] = tag.namespace
+    attrs.update(elem.attrib.items())
+    return tag.localname, attrs
