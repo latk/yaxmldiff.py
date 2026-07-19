@@ -1,5 +1,9 @@
 # yaxmldiff – Yet Another XML Diff Library
 
+[ GitHub: [latk/yaxmldiff.py](https://github.com/latk/yaxmldiff.py)
+| PyPI: [yaxmldiff](https://pypi.org/project/yaxmldiff/)
+]
+
 This library checks if two XML documents seem semantically equivalent.
 If not, it produces something similar to a unified diff.
 
@@ -18,6 +22,36 @@ None
   </doc>
 
 ```
+
+## Installation
+
+Yaxmldiff is available on PyPI: <https://pypi.org/project/yaxmldiff>
+
+If you want to use yaxmldiff as a **Python library**, add it to your project dependencies.
+How to do this depends on your project manager. Examples:
+
+* `pip install yaxmldiff`
+* `uv add yaxmldiff`
+* `poetry add yaxmldiff`
+
+Installing the library will also install the command line interface.
+
+If you only want to use the **CLI**, you can install into a dedicated venv using tools
+such as [uv](https://docs.astral.sh/uv/guides/tools/)
+or [pipx](https://pipx.pypa.io/):
+
+* `uv tool install yaxmldiff`
+* `pipx install yaxmldiff`
+
+If you want to try out the CLI without installing permanently, you can use:
+
+* `uvx yaxmldiff`
+* `pipx run yaxmldiff`
+
+You can also preview a bleeding-edge version from GitHub:
+
+* `uvx git+https://github.com/latk/yaxmldiff.py`
+* `pipx run --spec git+https://github.com/latk/yaxmldiff.py yaxmldiff`
 
 ## `compare_xml()`
 
@@ -45,6 +79,62 @@ def compare_xml(
     context: int = 3,
     comments: bool = True,
 ) -> str | None:
+```
+
+## Command line interface
+
+Yaxmldiff can also be used as a command line tool.
+
+Installation: The CLI is installed as part of the `yaxmldiff` package, see instructions above.
+
+Usage:
+
+<!-- regenerate via `COLUMNS=72 yaxmldiff --help` -->
+
+```
+usage: yaxmldiff [-h] [--html | --no-html]
+                 [--comments | --no-comments] [-U <n>]
+                 [--exit-code | --no-exit-code] [--quiet | --no-quiet]
+                 <left> <right>
+
+Compare two XML files via a structural diff.
+
+The output is similar to an unified diff (like the one used by Git),
+but the diff is performed structurally: element by element, not line
+by line. Whitespace is generally ignored.
+
+positional arguments:
+  <left>                a file to compare
+  <right>               a file to compare
+
+options:
+  -h, --help            show this help message and exit
+  --html, --no-html     Parse the files as HTML.
+  --comments, --no-comments
+                        Whether comments and processing instructions
+                        will be diffed as well.
+  -U, --context, --unified <n>
+                        How many lines of context to show around each
+                        change. (default: 3)
+
+                        The output will always use the "unified diff"
+                        format, never the "context" format. Where
+                        content is elided, the output cannot use the
+                        `@@ ... @@` markers due to the structural
+                        nature of the diff, and will instead insert a
+                        placeholder like `... skipped 12 lines`.
+  --exit-code, --no-exit-code
+                        Exit with code 1 if files differ, just like
+                        the standard `diff` tool.
+  --quiet, --no-quiet   Don't print the diff, only check if the inputs
+                        differ. Implies `--exit-code`.
+
+Exit code: exits with `0` on success, or `2` if there was a problem.
+If `--exit-code` or `--quiet` were enabled, exit with code `1` if the
+files differ.
+
+More info at the yaxmldiff website:
+<https://github.com/latk/yaxmldiff.py>
 ```
 
 ## Examples

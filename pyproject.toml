@@ -30,6 +30,9 @@ dependencies = [
 "GitHub"        = "https://github.com/latk/yaxmldiff.py"
 "Issue Tracker" = "https://github.com/latk/yaxmldiff.py/issues"
 
+[project.scripts]
+yaxmldiff = "yaxmldiff._cli:main"
+
 [dependency-groups]
 dev = [
     "mypy>=2.2.0",
