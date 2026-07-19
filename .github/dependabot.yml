@@ -7,7 +7,7 @@ updates:
       interval: "monthly"
     groups:
       actions:
-        applies-to: version-updates
+        patterns: ["*"]  # group everything
 
   - package-ecosystem: "uv"
     directory: "/"
