@@ -17,7 +17,7 @@ jobs:
         with:
           enable-cache: true
       - uses: taiki-e/install-action@just
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked --all-extras --dev
