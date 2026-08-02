@@ -8,7 +8,7 @@
 * improved support for XML namespaces
 * collapse repeated context lines at the same level (default: show 3 lines around each change)
 * smarted detection of inserted/deleted nodes
-* add `yaxmldiff` command line interface
+* new command line interface (usage: `yaxmldiff left.xml right.xml`)
 * (internal) refactor diffing logic to support the new features
 * (internal) packaging updates
 

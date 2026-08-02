@@ -23,7 +23,8 @@ classifiers = [
   "Topic :: Text Processing :: Markup :: XML",
 ]
 dependencies = [
-  "lxml>=5",  # not entirely sure what an appropriate constraint would be
+  "cappa>=0.32.2; python_version < '4.0'",
+  "lxml>=5", # not entirely sure what an appropriate constraint would be
 ]
 
 [project.urls]
@@ -35,10 +36,12 @@ yaxmldiff = "yaxmldiff._cli:main"
 
 [dependency-groups]
 dev = [
+    "inline-snapshot>=0.35.3",
     "mypy>=2.2.0",
-    "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "pytest>=9.1.1",
     "ruff>=0.15.21",
+    "six>=1.17.0; python_version < '3.11'",  # needed for resolution=lowest tests
     "types-lxml>=2026.2.16",
 ]
 
@@ -71,6 +74,10 @@ warn_redundant_casts = true
 warn_return_any = true
 warn_unreachable = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "tests"
+disallow_any_expr = false
 
 [tool.pytest.ini_options]
 addopts = "--doctest-glob=*.md"

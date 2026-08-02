@@ -34,7 +34,7 @@ multitest *args:
   uv run --isolated --python=3.12 pytest -v "$@"
   uv run --isolated --python=3.13 pytest -v "$@"
   uv run --isolated --python=3.14 pytest -v "$@"
-  uv run --isolated --resolution=lowest pytest -v "$@"
+  uv run --isolated --python=3.10 --resolution=lowest pytest -v "$@"
 
 # build wheels into `dist/` folder
 dist:

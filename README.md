@@ -87,55 +87,68 @@ Yaxmldiff can also be used as a command line tool.
 
 Installation: The CLI is installed as part of the `yaxmldiff` package, see instructions above.
 
-Usage:
+<!-- begin usage -->
 
-<!-- regenerate via `COLUMNS=72 yaxmldiff --help` -->
-
-```
-usage: yaxmldiff [-h] [--html | --no-html]
-                 [--comments | --no-comments] [-U <n>]
-                 [--exit-code | --no-exit-code] [--quiet | --no-quiet]
-                 <left> <right>
+Usage: `yaxmldiff LEFT RIGHT [--html, --no-html] [-U N] [--comments, --no-comments] [--exit-code, --no-exit-code] [--quiet, --no-quiet] [-h] [--completion COMPLETION]`
 
 Compare two XML files via a structural diff.
 
 The output is similar to an unified diff (like the one used by Git),
-but the diff is performed structurally: element by element, not line
-by line. Whitespace is generally ignored.
+but the diff is performed structurally: element by element, not line by line.
+Whitespace is generally ignored.
 
-positional arguments:
-  <left>                a file to compare
-  <right>               a file to compare
+**Input Options:**
 
-options:
-  -h, --help            show this help message and exit
-  --html, --no-html     Parse the files as HTML.
-  --comments, --no-comments
-                        Whether comments and processing instructions
-                        will be diffed as well.
-  -U, --context, --unified <n>
-                        How many lines of context to show around each
-                        change. (default: 3)
+- `LEFT`
 
-                        The output will always use the "unified diff"
-                        format, never the "context" format. Where
-                        content is elided, the output cannot use the
-                        `@@ ... @@` markers due to the structural
-                        nature of the diff, and will instead insert a
-                        placeholder like `... skipped 12 lines`.
-  --exit-code, --no-exit-code
-                        Exit with code 1 if files differ, just like
-                        the standard `diff` tool.
-  --quiet, --no-quiet   Don't print the diff, only check if the inputs
-                        differ. Implies `--exit-code`.
+  A file to compare.
 
-Exit code: exits with `0` on success, or `2` if there was a problem.
-If `--exit-code` or `--quiet` were enabled, exit with code `1` if the
-files differ.
+- `RIGHT`
 
-More info at the yaxmldiff website:
-<https://github.com/latk/yaxmldiff.py>
-```
+  A file to compare.
+
+- `[--html, --no-html]`
+
+  Parse the files as HTML.
+
+**Options:**
+
+- `[-U, --context, --unified N]`
+
+  How many lines of context to show around each change.
+
+  The output will always use the "unified diff" format, never the "context" format.
+  Where content is elided, the output cannot use the `@@ ... @@` markers due to the structural nature of the diff,
+  and will instead insert a placeholder like `... skipped 12 lines`.
+
+- `[--comments, --no-comments]`
+
+  Whether comments and processing instructions will be diffed as well.
+
+- `[--exit-code, --no-exit-code]`
+
+  Exit with code 1 if files differ, just like the standard `diff` tool.
+
+- `[--quiet, --no-quiet]`
+
+  Don't print the diff, only check if the inputs differ. Implies `--exit-code`.
+
+**Help:**
+
+- `[-h, --help]`
+
+  Show this message and exit.
+
+- `[--completion COMPLETION]`
+
+  Use `--completion generate` to print shell-specific completion source.
+
+**Exit code:** exits with `0` on success, or `2` if there was a problem.
+If `--exit-code` or `--quiet` were enabled, exit with code `1` if the files differ.
+
+More info at the yaxmldiff website: <https://github.com/latk/yaxmldiff.py>
+
+<!-- end usage -->
 
 ## Examples
 
