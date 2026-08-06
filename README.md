@@ -89,7 +89,7 @@ Installation: The CLI is installed as part of the `yaxmldiff` package, see instr
 
 <!-- begin usage -->
 
-Usage: `yaxmldiff LEFT RIGHT [--html, --no-html] [-U N] [--comments, --no-comments] [--exit-code, --no-exit-code] [--quiet, --no-quiet] [-h] [--completion COMPLETION]`
+Usage: `yaxmldiff LEFT RIGHT [--html, --no-html] [-U N] [--comments, --no-comments] [--exit-code, --no-exit-code] [--quiet, --no-quiet] [-h] [-v] [--completion COMPLETION]`
 
 Compare two XML files via a structural diff.
 
@@ -138,6 +138,10 @@ Whitespace is generally ignored.
 - `[-h, --help]`
 
   Show this message and exit.
+
+- `[-v, --version]`
+
+  Show the version and exit.
 
 - `[--completion COMPLETION]`
 

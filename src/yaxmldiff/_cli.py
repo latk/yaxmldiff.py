@@ -1,4 +1,5 @@
 import contextlib
+import importlib.metadata
 import pathlib
 import sys
 import typing as t
@@ -8,9 +9,11 @@ import lxml.etree
 
 from . import compare_xml
 
+NAME = "yaxmldiff"  # must match the distribution name, and the CLI name
+
 
 def main() -> None:
-    args = cappa.parse(Yaxmldiff)
+    args = cappa.parse(Yaxmldiff, version=_version())
 
     parser: t.Callable[[bytes], lxml.etree._Element] = lxml.etree.XML
     if args.html:
@@ -101,3 +104,11 @@ def _handle_parse_errors(filename: pathlib.Path) -> t.Generator[None, None, None
     except lxml.etree.XMLSyntaxError as err:
         _warn(f"{filename}: {err.msg}")
         raise SystemExit(2) from err
+
+
+def _version() -> str | None:
+    try:
+        version = importlib.metadata.version(NAME)
+    except importlib.metadata.PackageNotFoundError:  # pragma: no cover
+        return None
+    return f"{NAME} {version}"

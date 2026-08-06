@@ -33,6 +33,7 @@ def test_cli_docs_up_to_date(capsys: pytest.CaptureFixture[str]) -> None:
             argv=["--help"],
             input=io.StringIO(),
             help_formatter=_PlainMarkdownHelpFormatter(),
+            version="yaxmldiff dev",
         )
     stdout, stderr = capsys.readouterr()
     assert (err.value.code, stderr) == (0, "")
