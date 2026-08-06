@@ -394,16 +394,85 @@ Example: can diff nodes of different types
 
 ## Related software
 
-There are tons of XML diffing tools for Python.
+There are tons of XML diffing tools.
 
-Most closely related is [`lxml.doctestcompare`](https://lxml.de/apidoc/lxml.doctestcompare.html).
-The lxml variant has lots of useful tools for doctests,
+Most closely related is [`lxml.doctestcompare`](https://lxml.de/apidoc/lxml.doctestcompare.html) which is specifically intended for Python doctests.
+It has test-oriented features
 such as ignoring subtrees with an `<any>` tag or content with an `...` ellipsis.
 In contrast, yaxmldiff will compare two documents without further transformations.
 Another big difference is in the output.
 Whereas lxml will add inline annotations,
 yaxmldiff tries to emulate a unified diff,
 and will collapse uninteresting parts of the document.
+
+The `xmldiff` tool (PyPI: [xmldiff](https://pypi.org/project/xmldiff/) GitHub: [Shoobx/xmldiff](https://github.com/Shoobx/xmldiff)) is a much better diff tool than `yaxmldiff`.
+It can be used both as a Python library and as a CLI.
+However, it produces an XML patch: XPath-based instructions on what to move, add, or delete.
+This output is not particularly human-readable, as there's no context.
+An alternative XML formatter renders the diff in XML form, but that will show the full document, plus diff instructions nodes from a `diff` XML-namespace.
+
+<details><summary>xmldiff vs yaxmldiff output comparison</summary>
+
+```console
+$ uvx xmldiff --version
+xmldiff 3.0
+
+$ uvx xmldiff a.xml b.xml
+[update-text, /foo[1], "right", "left"]
+
+$ uvx xmldiff a.xml b.xml --pretty-print --formatter xml
+<foo xmlns:diff="http://namespaces.shoobx.com/diff"><diff:delete>lef</diff:delete><diff:insert>righ</diff:insert>t</foo>
+
+$ yaxmldiff a.xml b.xml
+  <foo>
+-   left
++   right
+  </foo>
+```
+
+</details>
+
+The [`difftastic` tool](https://difftastic.wilfred.me.uk/) has really good support for structural diffs across many languages.
+However, it is purely a command line tool.
+It cannot be used from Python as a library.
+The output also relies on color, unlike the unified diff format.
+
+<details><summary>difftastic vs yaxmldiff output comparison</summary>
+
+```console
+$ difftastic --version
+Difftastic 0.69.0
+
+Revision:  90a0f1b6a 2026-04-29
+Toolchain: 1.85.0
+System:    linux x86_64 Snap
+
+$ difftastic a.xml b.xml --display=inline
+b.xml --- XML
+1    <foo>left</foo>
+   1 <foo>right</foo>
+
+$ yaxmldiff a.xml b.xml
+  <foo>
+-   left
++   right
+  </foo>
+```
+
+</details>
+
+**Recommendations:**
+
+If you're looking for a Python-based XML diffing library or CLI tool:
+
+* pick the `lxml` doctest features if you want to match XML output in a doctest
+* pick `xmldiff` if you want to generate machine-readable diffs
+* pick `yaxmldiff` if you want to generate plaintext human-readable diffs
+
+If you're looking for a command-line tool:
+
+* pick `difftastic` if you want human-readable output with best-in-class structural diffing, and can rely on colored output
+* pick `yaxmldiff` if you want human-readable output that works as plaintext
 
 ## Contributing
 
