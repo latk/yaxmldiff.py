@@ -188,10 +188,12 @@ Example: changed text
 Example: nested changed text, collapses other nodes
 
 ```pycon
->>> print(compare_xml(
-...     "<root><uninteresting a='b'>foo</uninteresting><scope>a</scope></root>",
-...     "<root><uninteresting a='b'>foo</uninteresting><scope>b</scope></root>",
-... ))
+>>> print(
+...     compare_xml(
+...         "<root><uninteresting a='b'>foo</uninteresting><scope>a</scope></root>",
+...         "<root><uninteresting a='b'>foo</uninteresting><scope>b</scope></root>",
+...     )
+... )
   <root>
     <uninteresting ...>...</uninteresting>
     <scope>
@@ -228,10 +230,12 @@ Example: inserted and removed nodes
 Example: changed attributes
 
 ```pycon
->>> print(compare_xml(
-...     "<a onlya='1' both='2' changed='3'/>",
-...     "<a onlyb='1' both='2' changed='4'/>",
-... ))
+>>> print(
+...     compare_xml(
+...         "<a onlya='1' both='2' changed='3'/>",
+...         "<a onlyb='1' both='2' changed='4'/>",
+...     )
+... )
   <a both="2"
 -   changed="3"
 -   onlya="1"
@@ -256,9 +260,12 @@ Example: changed attrs collapse content
 Example: collapse common context
 
 ```pycon
->>> print(compare_xml(
-...     "<root><a/><b/><c/><d/><e/><f/><changed-left/></root>",
-...     "<root><a/><b/><c/><d/><e/><f/><changed-right/></root>"))
+>>> print(
+...     compare_xml(
+...         "<root><a/><b/><c/><d/><e/><f/><changed-left/></root>",
+...         "<root><a/><b/><c/><d/><e/><f/><changed-right/></root>",
+...     )
+... )
   <root>
     ... skipped 3 lines
     <d/>
@@ -273,10 +280,12 @@ Example: collapse common context
 Example: can hande encoding declarations
 
 ```pycon
->>> print(compare_xml(
-...     "<?xml version='1.0' encoding='UTF-8'?><a/>",
-...     "<a/>",
-... ))
+>>> print(
+...     compare_xml(
+...         "<?xml version='1.0' encoding='UTF-8'?><a/>",
+...         "<a/>",
+...     )
+... )
 None
 
 ```
@@ -304,10 +313,12 @@ Example: pre-parse documents
 Example: can handle XML namespaces
 
 ```pycon
->>> print(compare_xml(
-...  '<html:html xmlns:html="http://www.w3.org/1999/xhtml"><html:body>explicit namespaces</html:body></html:html>',
-...  '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
-... ))
+>>> print(
+...     compare_xml(
+...         '<html:html xmlns:html="http://www.w3.org/1999/xhtml"><html:body>explicit namespaces</html:body></html:html>',
+...         '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
+...     )
+... )
   <html ...>
     <body ...>
 -     explicit namespaces
@@ -318,10 +329,12 @@ Example: can handle XML namespaces
 ```
 
 ```pycon
->>> print(compare_xml(
-...  '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
-...  '<html><body>no namespaces</body></html>',
-... ))
+>>> print(
+...     compare_xml(
+...         '<html xmlns="http://www.w3.org/1999/xhtml"><body>implicit namespaces</body></html>',
+...         "<html><body>no namespaces</body></html>",
+...     )
+... )
 - <html xmlns="http://www.w3.org/1999/xhtml">...</html>
 + <html>...</html>
 
@@ -330,7 +343,7 @@ Example: can handle XML namespaces
 Example: can optionally handle comments
 
 ```pycon
->>> print(compare_xml('<a><!-- foo --></a>', '<a><!-- bar --></a>'))
+>>> print(compare_xml("<a><!-- foo --></a>", "<a><!-- bar --></a>"))
   <a>
     <!--
 -     foo
@@ -341,7 +354,7 @@ Example: can optionally handle comments
 ```
 
 ```pycon
->>> print(compare_xml('<a><!-- same --><x/></a>', '<a><!-- same --><y/></a>'))
+>>> print(compare_xml("<a><!-- same --><x/></a>", "<a><!-- same --><y/></a>"))
   <a>
     <!-- same -->
 -   <x/>
@@ -351,9 +364,11 @@ Example: can optionally handle comments
 ```
 
 ```pycon
->>> print(compare_xml('<a><!-- foo --></a>', '<a><!-- bar --></a>', comments=False))
+>>> print(compare_xml("<a><!-- foo --></a>", "<a><!-- bar --></a>", comments=False))
 None
->>> print(compare_xml('<a><!-- same --><x/></a>', '<a><!-- same --><y/></a>', comments=False))
+>>> print(
+...     compare_xml("<a><!-- same --><x/></a>", "<a><!-- same --><y/></a>", comments=False)
+... )
   <a>
 -   <x/>
 +   <y/>
@@ -364,7 +379,7 @@ None
 Example: can handle processing instructions
 
 ```pycon
->>> print(compare_xml('<a><?php echo 123; ?></a>', '<a><?php echo "abc"; ?></a>'))
+>>> print(compare_xml("<a><?php echo 123; ?></a>", '<a><?php echo "abc"; ?></a>'))
   <a>
     <?php
 -     echo 123;
@@ -375,7 +390,7 @@ Example: can handle processing instructions
 ```
 
 ```pycon
->>> print(compare_xml('<a><?math 3*3 ?></a>', '<a><?php echo "abc"; ?></a>'))
+>>> print(compare_xml("<a><?math 3*3 ?></a>", '<a><?php echo "abc"; ?></a>'))
   <a>
 -   <?math 3*3?>
 +   <?php echo "abc";?>
@@ -386,7 +401,7 @@ Example: can handle processing instructions
 Example: can diff nodes of different types
 
 ```pycon
->>> print(compare_xml('<a>text<!-- comment --></a>', '<a><element/><?pi?></a>'))
+>>> print(compare_xml("<a>text<!-- comment --></a>", "<a><element/><?pi?></a>"))
   <a>
 -   text
 +   <element/>

@@ -37,10 +37,10 @@ yaxmldiff = "yaxmldiff._cli:main"
 [dependency-groups]
 dev = [
     "inline-snapshot>=0.35.3",
-    "mypy>=2.2.0",
+    "mypy>=2.3.0",
     "pytest-cov>=7.1.0",
     "pytest>=9.1.1",
-    "ruff>=0.15.21",
+    "ruff>=0.16.2",
     "six>=1.17.0; python_version < '3.11'",  # needed for resolution=lowest tests
     "types-lxml>=2026.2.16",
 ]
@@ -83,7 +83,7 @@ disallow_any_expr = false
 addopts = "--doctest-glob=*.md"
 
 [tool.ruff.lint]
-select = [
+extend-select = [
   "E",  # pycodestyle errors
   "W",  # pycodestyle warnings
   "F",  # pyflakes
