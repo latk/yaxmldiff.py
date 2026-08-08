@@ -880,7 +880,7 @@ wheels = [
 
 [[package]]
 name = "yaxmldiff"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "cappa", marker = "python_full_version < '4'" },

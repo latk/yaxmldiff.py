@@ -80,7 +80,7 @@ def test_errors(tmp_path: pathlib.Path) -> None:
 
 def test_version() -> None:
     """Demonstrate the `--version` output."""
-    expected: str = inline_snapshot.snapshot("yaxmldiff 0.2.0")
+    expected: str = inline_snapshot.snapshot("yaxmldiff 0.3.0")
     assert _invoke("--version") == _Output(0, stdout=expected, stderr="")
 
 

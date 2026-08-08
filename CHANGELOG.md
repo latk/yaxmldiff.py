@@ -1,13 +1,13 @@
 # Changelog
 
-## unreleased
+## 0.3.0 - 2026-08-08
 
 * minimum Python version is 3.10
 * minimum lxml version is 5
 * support XML documents with comments or processing instructions (default: include comments and PIs in the diff)
 * improved support for XML namespaces
 * collapse repeated context lines at the same level (default: show 3 lines around each change)
-* smarted detection of inserted/deleted nodes
+* smarter detection of inserted/deleted nodes
 * new command line interface (usage: `yaxmldiff left.xml right.xml`)
 * (internal) refactor diffing logic to support the new features
 * (internal) packaging updates

@@ -1,6 +1,6 @@
 [project]
 name = "yaxmldiff"
-version = "0.2.0"
+version = "0.3.0"
 description = "yaxmldiff is Yet Another XML Differ"
 dynamic = ["readme"]
 requires-python = ">= 3.10"
@@ -120,3 +120,6 @@ ignore = [
 [tool.coverage]
 run.branch = true
 report.show_missing = true
+
+[tool.inline-snapshot]
+format-command="ruff format --stdin-filename {filename}"
